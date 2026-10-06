@@ -108,14 +108,32 @@ function openM(k){document.getElementById('modalContent').innerHTML=modalContent
 function closeM(){document.getElementById('modal').style.display='none'}
 function show(msg){const t=document.getElementById('toast');t.textContent=msg;t.style.display='block';setTimeout(()=>t.style.display='none',2600)}
 async function registerReturn(){
-  if(!clyckBottleId){show('La botella todavía no ha sido identificada.');return;}
-  const {error}=await clyckDB.from('devoluciones').insert({botella_id:clyckBottleId,beneficio:'10%',puntos:100});
-  if(error){console.error(error);show('No se pudo registrar la devolución.');return;}
+  if(!clyckBottleId){
+    show('❌ CLYCK no tiene ID de botella.');
+    console.error('CLYCK: clyckBottleId está vacío.');
+    return;
+  }
+
+  console.log('CLYCK: intentando registrar devolución para botella_id =', clyckBottleId);
+
+  const {data, error}=await clyckDB.from('devoluciones').insert({
+    botella_id:clyckBottleId,
+    beneficio:'10%',
+    puntos:100
+  }).select();
+
+  if(error){
+    console.error('CLYCK DEVOLUCION ERROR:', error);
+    show('❌ Error Supabase: ' + (error.message || error.code || 'desconocido'));
+    return;
+  }
+
+  console.log('CLYCK: devolución guardada:', data);
   await clyckRegisterInteraction('devolucion');
   returns++;points+=100;
   document.getElementById('returns').textContent=returns;
   document.getElementById('points').textContent=points;
-  show('¡Devolución registrada en Supabase! +100 puntos CLYCK');
+  show('✅ Devolución registrada en Supabase. +100 puntos');
   go('profile');
 }
 </script>
@@ -125,57 +143,52 @@ const CLYCK_SUPABASE_URL = 'https://lxzdjizpjwivrdkfhbfxi.supabase.co';
 const CLYCK_SUPABASE_KEY = 'sb_publishable_YbV4xLqU1v6SCQK5npuOUw_QQ3b38Z0';
 const clyckDB = window.supabase.createClient(CLYCK_SUPABASE_URL, CLYCK_SUPABASE_KEY);
 const CLYCK_BOTTLE = "IG-00482";
-let clyckBottleId = null;
 
-async function clyckLoadProduct() {
-  try {
-    const {data: bottle, error: be} = await clyckDB
-      .from("botellas").select("id,codigo,estado,producto_id")
-      .eq("codigo", CLYCK_BOTTLE).single();
-    if (be) throw be;
-    clyckBottleId = bottle.id;
-
-    const {data: product, error: pe} = await clyckDB
-      .from("productos").select("*")
-      .eq("id", bottle.producto_id).single();
-    if (pe) throw pe;
-
-    console.log("CLYCK conectado:", product);
-    await clyckRegisterInteraction("apertura");
-  } catch (e) {
-    console.error("CLYCK/Supabase:", e);
-  }
-}
+// PRUEBA DIAGNÓSTICA: la botella IG-00482 tiene ID 1 en Supabase.
+// Usamos temporalmente el ID directamente para comprobar el INSERT.
+let clyckBottleId = 1;
 
 async function clyckRegisterInteraction(action) {
-  if (!clyckBottleId) return;
-  const {error} = await clyckDB.from("interacciones").insert({
+  if (!clyckBottleId) {
+    console.error('CLYCK: no hay botella identificada.');
+    return;
+  }
+
+  const {data, error} = await clyckDB.from('interacciones').insert({
     botella_id: clyckBottleId,
     accion: action
-  });
-  if (error) console.error("Interacción:", error);
-}
+  }).select();
 
-async function clyckRegisterReturn() {
-  if (!clyckBottleId) {
-    alert("La botella todavía no ha sido identificada.");
-    return;
-  }
-  const {error} = await clyckDB.from("devoluciones").insert({
-    botella_id: clyckBottleId,
-    beneficio: "10%",
-    puntos: 100
-  });
   if (error) {
-    console.error(error);
-    alert("No se pudo registrar la devolución. Revisa las políticas RLS.");
+    console.error('CLYCK INTERACCION ERROR:', error);
     return;
   }
-  await clyckRegisterInteraction("devolucion");
-  alert("¡Devolución registrada en CLYCK! +100 puntos.");
+
+  console.log('CLYCK: interacción guardada:', data);
 }
 
-clyckLoadProduct();
+async function clyckTestConnection() {
+  console.log('CLYCK: iniciando prueba con botella_id =', clyckBottleId);
+
+  const {data: bottle, error: be} = await clyckDB
+    .from('botellas')
+    .select('id,codigo,estado,producto_id')
+    .eq('id', clyckBottleId)
+    .single();
+
+  if (be) {
+    console.error('CLYCK BOTELLA ERROR:', be);
+    show('❌ Error al consultar botella: ' + (be.message || be.code || 'desconocido'));
+    return;
+  }
+
+  console.log('CLYCK: botella encontrada:', bottle);
+  show('✅ CLYCK conectado · Botella ' + bottle.codigo);
+
+  await clyckRegisterInteraction('apertura');
+}
+
+clyckTestConnection();
 </script>
 
 </body>
