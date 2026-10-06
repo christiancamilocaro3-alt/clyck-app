@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>CLYCK App Prototype</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{--wine:#641d35;--wine2:#8c3850;--cream:#fffaf3;--sand:#f2e7d5;--green:#49644a;--ink:#2c2723;--muted:#7b7168;--gold:#c59a55}
 *{box-sizing:border-box}body{margin:0;background:#ded7ce;font-family:Arial,sans-serif;color:var(--ink)}
@@ -106,7 +107,76 @@ window.scrollTo(0,0);
 function openM(k){document.getElementById('modalContent').innerHTML=modalContent[k];document.getElementById('modal').style.display='flex'}
 function closeM(){document.getElementById('modal').style.display='none'}
 function show(msg){const t=document.getElementById('toast');t.textContent=msg;t.style.display='block';setTimeout(()=>t.style.display='none',2600)}
-function registerReturn(){returns++;points+=100;document.getElementById('returns').textContent=returns;document.getElementById('points').textContent=points;show('Devolución registrada en la demo. +100 puntos CLYCK');go('profile')}
+async function registerReturn(){
+  if(!clyckBottleId){show('La botella todavía no ha sido identificada.');return;}
+  const {error}=await clyckDB.from('devoluciones').insert({botella_id:clyckBottleId,beneficio:'10%',puntos:100});
+  if(error){console.error(error);show('No se pudo registrar la devolución.');return;}
+  await clyckRegisterInteraction('devolucion');
+  returns++;points+=100;
+  document.getElementById('returns').textContent=returns;
+  document.getElementById('points').textContent=points;
+  show('¡Devolución registrada en Supabase! +100 puntos CLYCK');
+  go('profile');
+}
 </script>
+
+<script>
+const CLYCK_SUPABASE_URL = 'https://lxzdjizpjwivrdkfhbfxi.supabase.co';
+const CLYCK_SUPABASE_KEY = 'sb_publishable_YbV4xLqU1v6SCQK5npuOUw_QQ3b38Z0';
+const clyckDB = window.supabase.createClient(CLYCK_SUPABASE_URL, CLYCK_SUPABASE_KEY);
+const CLYCK_BOTTLE = "IG-00482";
+let clyckBottleId = null;
+
+async function clyckLoadProduct() {
+  try {
+    const {data: bottle, error: be} = await clyckDB
+      .from("botellas").select("id,codigo,estado,producto_id")
+      .eq("codigo", CLYCK_BOTTLE).single();
+    if (be) throw be;
+    clyckBottleId = bottle.id;
+
+    const {data: product, error: pe} = await clyckDB
+      .from("productos").select("*")
+      .eq("id", bottle.producto_id).single();
+    if (pe) throw pe;
+
+    console.log("CLYCK conectado:", product);
+    await clyckRegisterInteraction("apertura");
+  } catch (e) {
+    console.error("CLYCK/Supabase:", e);
+  }
+}
+
+async function clyckRegisterInteraction(action) {
+  if (!clyckBottleId) return;
+  const {error} = await clyckDB.from("interacciones").insert({
+    botella_id: clyckBottleId,
+    accion: action
+  });
+  if (error) console.error("Interacción:", error);
+}
+
+async function clyckRegisterReturn() {
+  if (!clyckBottleId) {
+    alert("La botella todavía no ha sido identificada.");
+    return;
+  }
+  const {error} = await clyckDB.from("devoluciones").insert({
+    botella_id: clyckBottleId,
+    beneficio: "10%",
+    puntos: 100
+  });
+  if (error) {
+    console.error(error);
+    alert("No se pudo registrar la devolución. Revisa las políticas RLS.");
+    return;
+  }
+  await clyckRegisterInteraction("devolucion");
+  alert("¡Devolución registrada en CLYCK! +100 puntos.");
+}
+
+clyckLoadProduct();
+</script>
+
 </body>
 </html>
