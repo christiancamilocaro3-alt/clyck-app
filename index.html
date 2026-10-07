@@ -66,8 +66,8 @@ body{min-height:100vh}
 .progress i{display:block;width:68%;height:100%;background:var(--green)}
 
 .bottle-card{display:flex;align-items:center;gap:14px}
-.bottle-art{width:118px;height:150px;border-radius:14px;overflow:hidden;background:#eee;position:relative;box-shadow:0 5px 14px #0002;flex:0 0 118px}
-.bottle-art img{width:100%;height:100%;object-fit:cover;object-position:center;display:block}
+.bottle-art{width:103.4px;height:188.4px;border-radius:14px;overflow:hidden;background:#eee;position:relative;box-shadow:0 5px 14px #0002;flex:0 0 103.4px;display:flex;align-items:center;justify-content:center}
+.bottle-art img{width:100%;height:100%;object-fit:contain;object-position:center;display:block}
 
 
 .bottom{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;height:82px;background:#fff;display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid #eee4d8;z-index:10}
@@ -222,17 +222,41 @@ body{min-height:100vh}
       <button class="cta" id="signupBtn" onclick="signUp()">CREAR CUENTA</button>
       <button class="cta gold" id="loginBtn" onclick="signIn()">INICIAR SESIÓN</button>
     </div>
-    <p class="auth-note">Demo: en producción se puede añadir verificación de correo y recuperación de contraseña.</p>
+    <p class="auth-note">Recibirás un correo de confirmación para activar tu cuenta CLYCK.</p>
   </div>
 
   <div class="auth-card" id="accountCard" style="display:none">
+    <div id="signupSuccessFlow" style="display:none">
+      <div class="account-badge">✓ CUENTA CREADA</div>
+      <h2>¡Cuenta creada correctamente!</h2>
+      <p>Ahora asocia tu botella para activar tu experiencia CLYCK.</p>
+      <div class="auth-actions">
+        <button class="cta" id="startBottleBtn" onclick="startBottleAssociation()">ASOCIAR MI BOTELLA</button>
+      </div>
+      <div id="bottleIdentifyStep" style="display:none;margin-top:14px">
+        <div class="info">
+          <strong>🍷 Botella #IG-00482 identificada</strong><br>
+          Tu botella está lista para ser asociada a tu cuenta.
+        </div>
+        <div class="auth-actions">
+          <button class="cta" id="claimBottleBtn" onclick="claimCurrentBottle()">ASOCIAR BOTELLA</button>
+        </div>
+      </div>
+      <div id="bottleSuccessStep" style="display:none;margin-top:14px">
+        <div class="info">
+          <strong>🎉 ¡Botella asociada!</strong><br>
+          Tu experiencia CLYCK ya está activa.
+        </div>
+      </div>
+    </div>
+
     <div class="account-badge">CUENTA ACTIVA</div>
     <h2 id="accountName">Usuario CLYCK</h2>
     <p id="accountEmail"></p>
     <p><b>Botella asociada:</b> <span id="accountBottle">Ninguna</span></p>
     <p class="auth-note">La botella queda vinculada a tu cuenta para controlar los beneficios y su devolución.</p>
     <div class="auth-actions">
-      <button class="cta" onclick="claimCurrentBottle()">ASOCIAR ESTA BOTELLA</button>
+      <button class="cta" id="accountClaimBtn" onclick="claimCurrentBottle()">ASOCIAR ESTA BOTELLA</button>
       <button class="cta danger" onclick="signOut()">CERRAR SESIÓN</button>
     </div>
   </div>
@@ -385,6 +409,9 @@ async function refreshAccountUI(){
   document.getElementById('accountEmail').textContent=session.user.email || '';
   document.getElementById('accountBottle').textContent=clyckBottleId ? 'IG-00482' : 'Sin identificar';
   await loadUserBenefits(session.user.id);
+
+  const accountClaimBtn=document.getElementById('accountClaimBtn');
+  if(accountClaimBtn) accountClaimBtn.style.display = clyckBottleId ? 'block' : 'none';
 }
 
 async function ensureProfile(session){
@@ -394,22 +421,70 @@ async function ensureProfile(session){
   if(error)console.error('Perfil:',error);
 }
 
+async function startBottleAssociation(){
+  const step=document.getElementById('bottleIdentifyStep');
+  if(step) step.style.display='block';
+  const startBtn=document.getElementById('startBottleBtn');
+  if(startBtn) startBtn.style.display='none';
+  const claimBtn=document.getElementById('claimBottleBtn');
+  if(claimBtn) claimBtn.style.display='block';
+  document.getElementById('bottleIdentifyStep')?.scrollIntoView({behavior:'smooth',block:'center'});
+}
+
+function clyckAuthRedirectUrl(){
+  // Usa automáticamente la URL de la aplicación actual:
+  // GitHub Pages -> https://christiancamilocaro3-alt.github.io/clyck-app/
+  // Local -> http://localhost:3000/
+  return window.location.origin + window.location.pathname;
+}
+
 async function signUp(){
   const nombre=document.getElementById('authName').value.trim();
   const email=document.getElementById('authEmail').value.trim();
   const password=document.getElementById('authPassword').value;
   if(!nombre||!email||password.length<6){show('Completa nombre, correo y una contraseña de mínimo 6 caracteres.');return;}
+
+  const redirectTo=clyckAuthRedirectUrl();
+
   const {data,error}=await clyckDB.auth.signUp({
-    email,password,options:{data:{nombre}}
+    email,
+    password,
+    options:{
+      data:{nombre},
+      emailRedirectTo:redirectTo
+    }
   });
+
   if(error){console.error(error);show(error.message);return;}
+
   if(data.session) await ensureProfile(data.session);
+
   if(data.user && !data.session){
-    show('Cuenta creada. Revisa tu correo para confirmar la cuenta.');
-  }else{
-    show('¡Cuenta creada correctamente!');
+    show('¡Cuenta creada correctamente! Revisa tu correo para confirmar tu cuenta.');
+    return;
   }
+
+  show('¡Cuenta creada correctamente!');
   await refreshAccountUI();
+
+  const flow=document.getElementById('signupSuccessFlow');
+  if(flow){
+    flow.style.display='block';
+    flow.scrollIntoView({behavior:'smooth',block:'start'});
+  }
+}
+
+async function signIn(){
+  const email=document.getElementById('authEmail').value.trim();
+  const password=document.getElementById('authPassword').value;
+  if(!email||!password){show('Escribe tu correo y contraseña.');return;}
+  const {error}=await clyckDB.auth.signInWithPassword({email,password});
+  if(error){console.error(error);show('No se pudo iniciar sesión: '+error.message);return;}
+  const {data:{session}}=await clyckDB.auth.getSession();
+  await ensureProfile(session);
+  show('Sesión iniciada.');
+  await refreshAccountUI();
+  await claimCurrentBottle(true);
 }
 
 async function signIn(){
@@ -444,6 +519,14 @@ async function claimCurrentBottle(silent=false){
     return;
   }
   show(claimed ? '✓ Botella asociada a tu cuenta CLYCK.' : '✓ Botella ya asociada a tu cuenta.');
+  const identifyStep=document.getElementById('bottleIdentifyStep');
+  const successStep=document.getElementById('bottleSuccessStep');
+  const claimBtn=document.getElementById('claimBottleBtn');
+  const accountClaimBtn=document.getElementById('accountClaimBtn');
+  if(successStep) successStep.style.display='block';
+  if(claimBtn) claimBtn.style.display='none';
+  if(accountClaimBtn) accountClaimBtn.style.display='none';
+  if(identifyStep) identifyStep.scrollIntoView({behavior:'smooth',block:'center'});
   await refreshAccountUI();
 }
 async function loadUserBenefits(userId){
