@@ -74,7 +74,120 @@ table{width:100%;border-collapse:collapse;min-width:680px}th,td{text-align:left;
 </div>
 </main>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onerror="this.onerror=null;this.src='https://unpkg.com/@supabase/supabase-js@2'"></script>
+<script>
+const URL='https://igfjlxikvcdzrkithwrc.supabase.co';
+const KEY='sb_publishable_T8bVVgFPqp9fOE-usb2MYQ_et1O2elh';
+const AUTH_KEY='sb-igfjlxikvcdzrkithwrc-auth-token';
+let ACCESS_TOKEN=null;
+
+function esc(v){return String(v??'').replace(/[&<>\"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[m]));}
+function fecha(v){return v?new Date(v).toLocaleString('es-CO',{dateStyle:'short',timeStyle:'short'}):'—';}
+
+function leerSesion(){
+  try{
+    const raw=localStorage.getItem(AUTH_KEY);
+    if(!raw)return null;
+    const s=JSON.parse(raw);
+    return s&&s.access_token?s:null;
+  }catch(e){return null}
+}
+
+async function api(path,options={}){
+  const headers={
+    apikey:KEY,
+    Authorization:'Bearer '+ACCESS_TOKEN,
+    'Content-Type':'application/json',
+    ...(options.headers||{})
+  };
+  const r=await fetch(URL+'/rest/v1/'+path,{...options,headers});
+  const txt=await r.text();
+  let data=null;
+  try{data=txt?JSON.parse(txt):null}catch(e){data=txt}
+  if(!r.ok)throw new Error((data&&data.message)||('HTTP '+r.status+' '+r.statusText));
+  return data;
+}
+
+async function verificarAdmin(){
+  const s=leerSesion();
+  if(!s){
+    document.getElementById('usuario').textContent='Sin sesión';
+    document.getElementById('estado').className='error';
+    document.getElementById('estado').textContent='No se encontró la sesión. Abre admin.html, inicia sesión y luego entra nuevamente al dashboard.';
+    return false;
+  }
+  ACCESS_TOKEN=s.access_token;
+  try{
+    const pData=await api('perfiles?select=nombre,rol&id=eq.'+encodeURIComponent(s.user.id));
+    const p=pData&&pData[0];
+    if(!p||p.rol!=='admin'){
+      document.getElementById('usuario').textContent='Acceso no autorizado';
+      document.getElementById('estado').className='error';
+      document.getElementById('estado').textContent='La cuenta no tiene rol de administrador.';
+      return false;
+    }
+    document.getElementById('usuario').textContent=(p.nombre||'Administrador')+' · '+(s.user?.email||'');
+    return true;
+  }catch(e){
+    document.getElementById('usuario').textContent='Error de conexión';
+    document.getElementById('estado').className='error';
+    document.getElementById('estado').textContent='No se pudo validar el administrador: '+e.message;
+    return false;
+  }
+}
+
+async function cargar(){
+  const estado=document.getElementById('estado');
+  estado.className='status';estado.textContent='Actualizando…';
+  try{
+    const [b,i,d]=await Promise.all([
+      api('botellas?select=id,codigo,estado,usuario_id,productos(nombre,lote)&order=id.asc'),
+      api('interacciones?select=id,botella_id,usuario_id,accion,fecha&order=fecha.desc&limit=200'),
+      api('devoluciones?select=id,botella_id,usuario_id,puntos,beneficio,estado,confirmada_en,fecha&order=fecha.desc')
+    ]);
+    const bots=b||[],ints=i||[],devs=d||[];
+    const q=document.getElementById('buscar').value.trim().toUpperCase();
+    const visibles=bots.filter(x=>!q||String(x.codigo).toUpperCase().includes(q));
+    const solicitudes=devs.filter(x=>x.estado==='solicitada').length;
+    const confirmadas=devs.filter(x=>x.estado==='confirmada').length;
+
+    document.getElementById('nBotellas').textContent=bots.length;
+    document.getElementById('nAsociadas').textContent=bots.filter(x=>x.usuario_id).length;
+    document.getElementById('pAsociadas').textContent=bots.length?Math.round(bots.filter(x=>x.usuario_id).length/bots.length*100)+'% del piloto':'0%';
+    document.getElementById('nInteracciones').textContent=ints.length;
+    document.getElementById('nSolicitudes').textContent=solicitudes;
+    document.getElementById('nConfirmadas').textContent=confirmadas;
+
+    document.getElementById('tabla').innerHTML=visibles.map(x=>{
+      const ii=ints.filter(z=>z.botella_id===x.id).length;
+      const dd=devs.find(z=>z.botella_id===x.id);
+      const ed=dd?(dd.estado==='confirmada'?'Confirmada':'Solicitada'):'—';
+      return `<tr><td><b>${esc(x.codigo)}</b></td><td><span class="badge">${esc(x.estado)}</span></td><td>${x.usuario_id?esc(x.usuario_id):'—'}</td><td>${ii}</td><td><span class="badge ${dd?.estado==='solicitada'?'pending':dd?.estado==='confirmada'?'ok':''}">${ed}</span></td><td>${dd?.estado==='confirmada'?(dd.puntos||0):0}</td></tr>`;
+    }).join('')||'<tr><td colspan="6">No hay resultados.</td></tr>';
+
+    const counts=bots.map(x=>({codigo:x.codigo,n:ints.filter(z=>z.botella_id===x.id).length})).sort((a,b)=>b.n-a.n).slice(0,8);
+    const max=Math.max(1,...counts.map(x=>x.n));
+    document.getElementById('barras').innerHTML=counts.map(x=>`<div class="barrow"><b>${esc(x.codigo)}</b><div class="bar"><i style="width:${Math.round(x.n/max*100)}%"></i></div><span>${x.n}</span></div>`).join('');
+
+    const asociadas=bots.filter(x=>x.usuario_id).length,pct=bots.length?Math.round(asociadas/bots.length*100):0;
+    document.getElementById('resumen').innerHTML=`<div class="barrow"><b>Asociación</b><div class="bar"><i style="width:${pct}%"></i></div><span>${pct}%</span></div><p class="muted">Botellas asociadas: <b>${asociadas}</b> de ${bots.length}.</p><p class="muted">Solicitudes pendientes: <b>${solicitudes}</b>.</p><p class="muted">Devoluciones confirmadas: <b>${confirmadas}</b>.</p><p class="muted">Puntos confirmados: <b>${devs.filter(x=>x.estado==='confirmada').reduce((s,x)=>s+(x.puntos||0),0)}</b>.</p>`;
+
+    document.getElementById('timeline').innerHTML=ints.slice(0,12).map(x=>`<div class="event"><b>${esc(x.accion)}</b> · ${esc(bots.find(z=>z.id===x.botella_id)?.codigo||x.botella_id)}<small>${fecha(x.fecha)}</small></div>`).join('')||'<div class="muted">Sin actividad todavía.</div>';
+    estado.textContent='Datos actualizados · '+new Date().toLocaleTimeString('es-CO');
+  }catch(e){
+    estado.className='error';estado.textContent='Error al cargar datos: '+e.message;
+  }
+}
+
+function salir(){
+  localStorage.removeItem(AUTH_KEY);
+  location.href='admin.html';
+}
+
+(async()=>{
+  const ok=await verificarAdmin();
+  if(ok)await cargar();
+})();
+</script>
 <script>
 const URL='https://igfjlxikvcdzrkithwrc.supabase.co';
 const KEY='sb_publishable_T8bVVgFPqp9fOE-usb2MYQ_et1O2elh';
