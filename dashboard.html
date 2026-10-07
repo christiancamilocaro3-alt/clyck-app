@@ -74,19 +74,23 @@ table{width:100%;border-collapse:collapse;min-width:680px}th,td{text-align:left;
 </div>
 </main>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onerror="this.onerror=null;this.src='https://unpkg.com/@supabase/supabase-js@2'"></script>
 <script>
 const URL='https://igfjlxikvcdzrkithwrc.supabase.co';
 const KEY='sb_publishable_T8bVVgFPqp9fOE-usb2MYQ_et1O2elh';
+if(typeof supabase==='undefined'){ document.getElementById('usuario').textContent='No se pudo cargar el motor de conexión'; document.getElementById('estado').className='error'; document.getElementById('estado').textContent='No se pudo cargar Supabase. Recarga la página o prueba Ctrl+F5.'; throw new Error('Supabase JS no cargó'); }
 const db=supabase.createClient(URL,KEY);
+function timeout(p,ms=8000){return Promise.race([p,new Promise((_,rej)=>setTimeout(()=>rej(new Error('La conexión tardó demasiado. Cierra otras pestañas de CLYCK y vuelve a cargar.')),ms))]);}
 
 function esc(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
 function fecha(v){return v?new Date(v).toLocaleString('es-CO',{dateStyle:'short',timeStyle:'short'}):'—';}
 
 async function verificarAdmin(){
- const {data:{session}}=await db.auth.getSession();
+ let session;
+ try{ const r=await timeout(db.auth.getSession(),8000); session=r.data?.session; }catch(e){ document.getElementById('usuario').textContent='Error de sesión'; document.getElementById('estado').className='error'; document.getElementById('estado').textContent=e.message||'No se pudo verificar la sesión.'; return null; }
  if(!session){location.href='admin.html';return null}
- const {data:p,error}=await db.from('perfiles').select('nombre,rol').eq('id',session.user.id).single();
+ let p,error;
+ try{ ({data:p,error}=await timeout(db.from('perfiles').select('nombre,rol').eq('id',session.user.id).single(),8000)); }catch(e){ document.getElementById('usuario').textContent='Error de conexión'; document.getElementById('estado').className='error'; document.getElementById('estado').textContent=e.message||'No se pudo consultar el perfil.'; return null; }
  if(error||p?.rol!=='admin'){await db.auth.signOut();location.href='admin.html';return null}
  document.getElementById('usuario').textContent=(p.nombre||'Administrador')+' · '+session.user.email;
  return session;
@@ -137,6 +141,6 @@ async function cargar(){
 }
 
 async function salir(){await db.auth.signOut();location.href='admin.html'}
-(async()=>{const s=await verificarAdmin();if(s)await cargar()})();
+(async()=>{try{const s=await verificarAdmin();if(s)await cargar()}catch(e){console.error(e);document.getElementById('usuario').textContent='Error';document.getElementById('estado').className='error';document.getElementById('estado').textContent='Error inesperado: '+(e.message||e)}})();
 </script>
 </body></html>
