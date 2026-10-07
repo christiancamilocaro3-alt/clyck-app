@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CLYCK · Dashboard empresarial</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Arial,sans-serif;background:#f4f7f6;color:#172923}
+header{background:#0b2922;color:#fff;padding:18px 4%;display:flex;justify-content:space-between;align-items:center;gap:20px}
+.logo{font-size:25px;font-weight:900}.tag{font-size:12px;opacity:.72;margin-top:3px}.user{font-size:12px;text-align:right}
+main{max-width:1250px;margin:26px auto;padding:0 18px}.toolbar{display:flex;justify-content:space-between;align-items:center;gap:15px;margin-bottom:20px;flex-wrap:wrap}
+h1{font-size:25px;margin:0 0 5px}.muted{color:#6c7975;font-size:13px}
+button{border:0;border-radius:10px;padding:10px 14px;background:#0b2922;color:#fff;font-weight:750;cursor:pointer}button.light{background:#e8efec;color:#17342c}
+.cards{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:18px}.card{background:#fff;border:1px solid #e3e9e6;border-radius:15px;padding:17px;box-shadow:0 5px 18px #00000007}.label{font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:#687671}.num{font-size:28px;font-weight:900;margin-top:6px}.small{font-size:11px;color:#7b8783;margin-top:3px}
+.grid{display:grid;grid-template-columns:1.35fr .9fr;gap:18px}.panel{background:#fff;border:1px solid #e3e9e6;border-radius:15px;padding:18px;margin-bottom:18px}.panel h2{font-size:17px;margin:0 0 14px}
+.barrow{display:grid;grid-template-columns:78px 1fr 42px;gap:8px;align-items:center;margin:10px 0;font-size:12px}.bar{height:9px;background:#e8eeeb;border-radius:99px;overflow:hidden}.bar i{display:block;height:100%;background:#0b2922;border-radius:99px}
+table{width:100%;border-collapse:collapse;min-width:680px}th,td{text-align:left;padding:10px 8px;border-bottom:1px solid #edf0ee;font-size:12px}th{font-size:10px;text-transform:uppercase;color:#71807a}.wrap{overflow:auto}.badge{padding:5px 8px;border-radius:999px;background:#edf4f1;font-size:10px;font-weight:800}.pending{background:#fff4df;color:#80520b}.ok{background:#e8f5ed;color:#21623a}
+.timeline{display:grid;gap:9px}.event{border-left:3px solid #d8e2de;padding:7px 0 7px 12px}.event b{font-size:12px}.event small{display:block;color:#77837f;margin-top:2px}
+.search{display:flex;gap:8px}.search input{padding:10px 12px;border:1px solid #d5dfdb;border-radius:10px;min-width:220px}
+.status{font-size:12px;color:#66736f;margin:8px 0}.error{color:#9e2525;background:#fff0f0;padding:9px;border-radius:9px}
+@media(max-width:1000px){.cards{grid-template-columns:repeat(3,1fr)}.grid{grid-template-columns:1fr}}
+@media(max-width:650px){.cards{grid-template-columns:repeat(2,1fr)}header{align-items:flex-start;flex-direction:column}.user{text-align:left}}
+</style>
+</head>
+<body>
+<header>
+  <div><div class="logo">CLYCK</div><div class="tag">Dashboard empresarial · Vino de Iguaraya</div></div>
+  <div class="user" id="usuario">Verificando sesión…</div>
+</header>
+
+<main>
+<div class="toolbar">
+  <div><h1>Resumen del piloto</h1><div class="muted">Trazabilidad de botellas, interacción y devoluciones</div></div>
+  <div><button class="light" onclick="cargar()">Actualizar datos</button> <button onclick="salir()">Cerrar sesión</button></div>
+</div>
+
+<div class="cards">
+  <div class="card"><div class="label">Botellas</div><div class="num" id="nBotellas">—</div><div class="small">registradas</div></div>
+  <div class="card"><div class="label">Asociadas</div><div class="num" id="nAsociadas">—</div><div class="small" id="pAsociadas">—</div></div>
+  <div class="card"><div class="label">Interacciones</div><div class="num" id="nInteracciones">—</div><div class="small">eventos registrados</div></div>
+  <div class="card"><div class="label">Solicitudes</div><div class="num" id="nSolicitudes">—</div><div class="small">de devolución</div></div>
+  <div class="card"><div class="label">Confirmadas</div><div class="num" id="nConfirmadas">—</div><div class="small">devoluciones</div></div>
+</div>
+
+<div id="estado" class="status">Cargando…</div>
+
+<div class="grid">
+<section>
+  <div class="panel">
+    <h2>Actividad por botella</h2>
+    <div id="barras"></div>
+  </div>
+
+  <div class="panel">
+    <h2>Inventario y trazabilidad</h2>
+    <div class="search"><input id="buscar" placeholder="Buscar código, por ejemplo IG-00484"><button onclick="cargar()">Buscar</button></div>
+    <div class="wrap" style="margin-top:12px">
+      <table><thead><tr><th>Botella</th><th>Estado</th><th>Usuario</th><th>Interacciones</th><th>Devolución</th><th>Puntos</th></tr></thead>
+      <tbody id="tabla"></tbody></table>
+    </div>
+  </div>
+</section>
+
+<aside>
+  <div class="panel">
+    <h2>Estado del piloto</h2>
+    <div id="resumen"></div>
+  </div>
+  <div class="panel">
+    <h2>Actividad reciente</h2>
+    <div id="timeline" class="timeline"></div>
+  </div>
+</aside>
+</div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const URL='https://igfjlxikvcdzrkithwrc.supabase.co';
+const KEY='sb_publishable_T8bVVgFPqp9fOE-usb2MYQ_et1O2elh';
+const db=supabase.createClient(URL,KEY);
+
+function esc(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
+function fecha(v){return v?new Date(v).toLocaleString('es-CO',{dateStyle:'short',timeStyle:'short'}):'—';}
+
+async function verificarAdmin(){
+ const {data:{session}}=await db.auth.getSession();
+ if(!session){location.href='admin.html';return null}
+ const {data:p,error}=await db.from('perfiles').select('nombre,rol').eq('id',session.user.id).single();
+ if(error||p?.rol!=='admin'){await db.auth.signOut();location.href='admin.html';return null}
+ document.getElementById('usuario').textContent=(p.nombre||'Administrador')+' · '+session.user.email;
+ return session;
+}
+
+async function cargar(){
+ const estado=document.getElementById('estado');estado.className='status';estado.textContent='Actualizando…';
+ const [{data:b,error:be},{data:i,error:ie},{data:d,error:de}]=await Promise.all([
+  db.from('botellas').select('id,codigo,estado,usuario_id,productos(nombre,lote)').order('id'),
+  db.from('interacciones').select('id,botella_id,usuario_id,accion,fecha').order('fecha',{ascending:false}).limit(200),
+  db.from('devoluciones').select('id,botella_id,usuario_id,puntos,beneficio,estado,confirmada_en,fecha').order('fecha',{ascending:false})
+ ]);
+ if(be||ie||de){estado.className='error';estado.textContent='Error: '+(be?.message||ie?.message||de?.message);return}
+ const bots=b||[], ints=i||[], devs=d||[];
+ const q=document.getElementById('buscar').value.trim().toUpperCase();
+ const visibles=bots.filter(x=>!q||x.codigo.toUpperCase().includes(q));
+ const solicitudes=devs.filter(x=>x.estado==='solicitada').length;
+ const confirmadas=devs.filter(x=>x.estado==='confirmada').length;
+ document.getElementById('nBotellas').textContent=bots.length;
+ document.getElementById('nAsociadas').textContent=bots.filter(x=>x.usuario_id).length;
+ document.getElementById('pAsociadas').textContent=bots.length?Math.round(bots.filter(x=>x.usuario_id).length/bots.length*100)+'% del piloto':'0%';
+ document.getElementById('nInteracciones').textContent=ints.length;
+ document.getElementById('nSolicitudes').textContent=solicitudes;
+ document.getElementById('nConfirmadas').textContent=confirmadas;
+
+ document.getElementById('tabla').innerHTML=visibles.map(x=>{
+   const ii=ints.filter(z=>z.botella_id===x.id).length;
+   const dd=devs.find(z=>z.botella_id===x.id);
+   const estadoDev=dd?(dd.estado==='confirmada'?'Confirmada':'Solicitada'):'—';
+   return `<tr><td><b>${esc(x.codigo)}</b></td><td><span class="badge">${esc(x.estado)}</span></td><td>${x.usuario_id?esc(x.usuario_id):'—'}</td><td>${ii}</td><td><span class="badge ${dd?.estado==='solicitada'?'pending':dd?.estado==='confirmada'?'ok':''}">${estadoDev}</span></td><td>${dd?.estado==='confirmada'?(dd.puntos||0):0}</td></tr>`;
+ }).join('')||'<tr><td colspan="6">No hay resultados.</td></tr>';
+
+ const counts=bots.map(x=>({codigo:x.codigo,n:ints.filter(z=>z.botella_id===x.id).length})).sort((a,b)=>b.n-a.n).slice(0,8);
+ const max=Math.max(1,...counts.map(x=>x.n));
+ document.getElementById('barras').innerHTML=counts.map(x=>`<div class="barrow"><b>${esc(x.codigo)}</b><div class="bar"><i style="width:${Math.round(x.n/max*100)}%"></i></div><span>${x.n}</span></div>`).join('');
+
+ const asociadas=bots.filter(x=>x.usuario_id).length;
+ const pct=bots.length?Math.round(asociadas/bots.length*100):0;
+ document.getElementById('resumen').innerHTML=`
+   <div class="barrow"><b>Asociación</b><div class="bar"><i style="width:${pct}%"></i></div><span>${pct}%</span></div>
+   <p class="muted">Botellas asociadas: <b>${asociadas}</b> de ${bots.length}.</p>
+   <p class="muted">Solicitudes pendientes: <b>${solicitudes}</b>.</p>
+   <p class="muted">Devoluciones confirmadas: <b>${confirmadas}</b>.</p>
+   <p class="muted">Puntos confirmados: <b>${devs.filter(x=>x.estado==='confirmada').reduce((s,x)=>s+(x.puntos||0),0)}</b>.</p>`;
+
+ document.getElementById('timeline').innerHTML=ints.slice(0,12).map(x=>`<div class="event"><b>${esc(x.accion)}</b> · ${esc(bots.find(z=>z.id===x.botella_id)?.codigo||x.botella_id)}<small>${fecha(x.fecha)}</small></div>`).join('')||'<div class="muted">Sin actividad todavía.</div>';
+ estado.textContent='Datos actualizados · '+new Date().toLocaleTimeString('es-CO');
+}
+
+async function salir(){await db.auth.signOut();location.href='admin.html'}
+(async()=>{const s=await verificarAdmin();if(s)await cargar()})();
+</script>
+</body></html>
