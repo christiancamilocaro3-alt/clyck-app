@@ -226,18 +226,13 @@ body{min-height:100vh}
   </div>
 
   <div class="auth-card" id="accountCard" style="display:none">
-    <div class="account-badge" id="accountBadge">CUENTA ACTIVA</div>
+    <div class="account-badge">CUENTA ACTIVA</div>
     <h2 id="accountName">Usuario CLYCK</h2>
     <p id="accountEmail"></p>
-    <div id="welcomeNextStep" style="display:none;margin:16px 0;padding:16px;border-radius:14px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12)">
-      <h3 style="margin:0 0 8px">¡Cuenta creada correctamente!</h3>
-      <p style="margin:0 0 14px">Ahora asocia tu botella para activar tu experiencia CLYCK y comenzar a registrar tus beneficios.</p>
-      <button class="cta" onclick="claimCurrentBottle()">ASOCIAR MI BOTELLA</button>
-    </div>
     <p><b>Botella asociada:</b> <span id="accountBottle">Ninguna</span></p>
     <p class="auth-note">La botella queda vinculada a tu cuenta para controlar los beneficios y su devolución.</p>
     <div class="auth-actions">
-      <button class="cta" id="associateBtn" onclick="claimCurrentBottle()">ASOCIAR ESTA BOTELLA</button>
+      <button class="cta" onclick="claimCurrentBottle()">ASOCIAR ESTA BOTELLA</button>
       <button class="cta danger" onclick="signOut()">CERRAR SESIÓN</button>
     </div>
   </div>
@@ -310,7 +305,7 @@ async function clyckRegisterInteraction(action){
   }catch(e){console.error(e)}
 }
 
-async async function registerReturn(){
+async function registerReturn(){
   const {data:{session}}=await clyckDB.auth.getSession();
   if(!session){
     show('Primero crea tu cuenta o inicia sesión.');
@@ -377,8 +372,6 @@ async function refreshAccountUI(){
   const {data:{session}}=await clyckDB.auth.getSession();
   const authCard=document.getElementById('authCard');
   const accountCard=document.getElementById('accountCard');
-  const welcome=document.getElementById('welcomeNextStep');
-  const associateBtn=document.getElementById('associateBtn');
   if(!session){
     authCard.style.display='block';
     accountCard.style.display='none';
@@ -391,8 +384,6 @@ async function refreshAccountUI(){
   document.getElementById('accountName').textContent=name;
   document.getElementById('accountEmail').textContent=session.user.email || '';
   document.getElementById('accountBottle').textContent=clyckBottleId ? 'IG-00482' : 'Sin identificar';
-  if(welcome) welcome.style.display='none';
-  if(associateBtn) associateBtn.style.display='block';
   await loadUserBenefits(session.user.id);
 }
 
@@ -412,19 +403,13 @@ async function signUp(){
     email,password,options:{data:{nombre}}
   });
   if(error){console.error(error);show(error.message);return;}
-  if(data.session){
-    await ensureProfile(data.session);
-    await refreshAccountUI();
-    const welcome=document.getElementById('welcomeNextStep');
-    const associateBtn=document.getElementById('associateBtn');
-    if(welcome) welcome.style.display='block';
-    if(associateBtn) associateBtn.style.display='none';
-    show('¡Cuenta creada! Ahora asocia tu botella.');
-    go('profile');
-    setTimeout(()=>welcome?.scrollIntoView({behavior:'smooth',block:'center'}),120);
-  }else if(data.user){
+  if(data.session) await ensureProfile(data.session);
+  if(data.user && !data.session){
     show('Cuenta creada. Revisa tu correo para confirmar la cuenta.');
+  }else{
+    show('¡Cuenta creada correctamente!');
   }
+  await refreshAccountUI();
 }
 
 async function signIn(){
