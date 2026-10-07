@@ -343,7 +343,6 @@ async function registerReturn(){
     return;
   }
 
-  // La devolución exige que la botella ya esté vinculada a esta cuenta.
   const {data:bottle,error:be}=await clyckDB.from('botellas')
     .select('id,codigo,usuario_id,estado').eq('id',clyckBottleId).single();
   if(be){console.error(be);show('No se pudo verificar la botella.');return;}
@@ -354,39 +353,50 @@ async function registerReturn(){
     return;
   }
   if(bottle.estado==='recuperada'){
-    show('Esta botella ya fue registrada como recuperada.');
+    show('Esta botella ya fue recuperada y confirmada.');
+    return;
+  }
+  if(bottle.estado==='devolucion_solicitada'){
+    show('La devolución ya fue solicitada. Yosü debe confirmar la recepción.');
     return;
   }
 
   const {data:existing,error:ee}=await clyckDB.from('devoluciones')
-    .select('id').eq('botella_id',clyckBottleId).maybeSingle();
+    .select('id,estado').eq('botella_id',clyckBottleId).maybeSingle();
   if(ee){console.error(ee);show('No se pudo comprobar el estado de la devolución.');return;}
-  if(existing){show('Esta botella ya tiene una devolución registrada.');return;}
+  if(existing){
+    show(existing.estado==='confirmada'
+      ? 'Esta botella ya tiene una devolución confirmada.'
+      : 'Esta botella ya tiene una devolución solicitada.');
+    return;
+  }
+
+  const {error:re}=await clyckDB.rpc('request_bottle_return',{p_botella_id:clyckBottleId});
+  if(re){
+    console.error('Solicitud de devolución:',re);
+    show(re.message?.includes('otra cuenta') ? re.message : 'No se pudo solicitar la devolución.');
+    return;
+  }
 
   const {error}=await clyckDB.from('devoluciones').insert({
     botella_id:clyckBottleId,
     usuario_id:session.user.id,
-    beneficio:'10%',
-    puntos:100
+    beneficio:'10% sujeto a confirmación',
+    puntos:0,
+    estado:'solicitada'
   });
   if(error){
     console.error(error);
-    if(error.code==='23505') show('Esta botella ya tiene una devolución registrada.');
-    else show('No se pudo registrar la devolución. Intenta nuevamente.');
+    show(error.code==='23505'
+      ? 'Esta botella ya tiene una devolución registrada.'
+      : 'La botella quedó marcada como solicitud, pero no se pudo guardar el registro.');
     return;
   }
 
-  const {error:re}=await clyckDB.rpc('mark_bottle_returned',{p_botella_id:clyckBottleId});
-  if(re){
-    console.error('Estado botella:',re);
-    show('La devolución fue registrada, pero falta actualizar el estado de la botella.');
-  }else{
-    show('¡Devolución registrada! +100 puntos CLYCK');
-  }
-
-  await clyckRegisterInteraction('devolucion');
+  await clyckRegisterInteraction('devolucion_solicitada');
   await loadUserBenefits(session.user.id);
   await refreshAccountUI();
+  show('✓ Solicitud enviada. Yosü confirmará la recepción para otorgar 100 puntos.');
   go('profile');
 }
 const CLYCK_SUPABASE_URL='https://igfjlxikvcdzrkithwrc.supabase.co';
@@ -534,7 +544,7 @@ async function claimCurrentBottle(silent=false){
 async function loadUserBenefits(userId){
   try{
     const {data,error}=await clyckDB.from('devoluciones')
-      .select('id,puntos,beneficio').eq('usuario_id',userId);
+      .select('id,puntos,beneficio,estado').eq('usuario_id',userId).eq('estado','confirmada');
     if(error)throw error;
     returns=data?.length||0;
     points=(data||[]).reduce((sum,row)=>sum+(row.puntos||0),0);
