@@ -272,7 +272,16 @@ body{min-height:100vh}
       <p>La botella tiene un identificador digital y, cuando el usuario inicia sesión, CLYCK puede asociar la experiencia a una cuenta sin exponer información personal públicamente.</p>
     </div>
   </div>
+  <div class="product" id="userHistoryCard">
+  <h2>📋 Mi historial</h2>
+  <p>Consulta las actividades registradas en tu experiencia CLYCK.</p>
+  <div id="historyList" aria-live="polite">
+    <p>Inicia sesión para consultar tu historial.</p>
+  </div>
+</div>
 </section>
+
+
 
 <nav class="bottom">
   <button class="nav active" data-go="home" onclick="go('home')"><b>⌂</b>Inicio</button>
@@ -421,7 +430,7 @@ async function refreshAccountUI(){
   document.getElementById('accountEmail').textContent=session.user.email || '';
   document.getElementById('accountBottle').textContent=clyckBottleId ? clyckBottleCode : 'Sin identificar';
   await loadUserBenefits(session.user.id);
-
+  await loadUserHistory(session.user.id);
   const accountClaimBtn=document.getElementById('accountClaimBtn');
   if(accountClaimBtn) accountClaimBtn.style.display = clyckBottleId ? 'block' : 'none';
 }
@@ -542,6 +551,9 @@ async function claimCurrentBottle(silent=false){
     else show('No se pudo asociar la botella.');
     return;
   }
+  if (claimed) {
+  await clyckRegisterInteraction('botella_asociada');
+}
   show(claimed ? '✓ Botella asociada a tu cuenta CLYCK.' : '✓ Botella ya asociada a tu cuenta.');
   const identifyStep=document.getElementById('bottleIdentifyStep');
   const successStep=document.getElementById('bottleSuccessStep');
@@ -553,6 +565,93 @@ async function claimCurrentBottle(silent=false){
   if(identifyStep) identifyStep.scrollIntoView({behavior:'smooth',block:'center'});
   await refreshAccountUI();
 }
+
+  
+async function loadUserHistory(userId) {
+  const list = document.getElementById('historyList');
+  if (!list) return;
+
+  list.textContent = 'Cargando historial...';
+
+  try {
+    const { data: events, error } = await clyckDB
+      .from('interacciones')
+      .select('id, accion, fecha, botella_id')
+      .eq('usuario_id', userId)
+      .order('fecha', { ascending: false })
+      .limit(20);
+
+    if (error) throw error;
+
+    if (!events || events.length === 0) {
+      list.textContent = 'Todavía no tienes actividades registradas.';
+      return;
+    }
+
+    const bottleIds = [
+      ...new Set(events.map(e => e.botella_id).filter(Boolean))
+    ];
+
+    const bottleCodes = {};
+
+    if (bottleIds.length > 0) {
+      const { data: bottles, error: bottleError } = await clyckDB
+        .from('botellas')
+        .select('id, codigo')
+        .in('id', bottleIds);
+
+      if (bottleError) throw bottleError;
+
+      for (const bottle of bottles || []) {
+        bottleCodes[bottle.id] = bottle.codigo;
+      }
+    }
+
+    const labels = {
+      apertura: 'Visitaste la experiencia de tu botella',
+      botella_asociada: 'Asociaste una botella a tu cuenta',
+      devolucion: 'Registraste una devolución',
+      devolucion_confirmada: 'Tu devolución fue confirmada'
+    };
+
+    list.replaceChildren();
+
+    for (const event of events) {
+      const item = document.createElement('div');
+      item.style.cssText =
+        'padding:12px 0;border-bottom:1px solid #e5e5e5';
+
+      const title = document.createElement('strong');
+      title.textContent =
+        labels[event.accion] || event.accion || 'Actividad CLYCK';
+
+      const detail = document.createElement('p');
+      detail.style.margin = '6px 0';
+
+      const date = event.fecha
+        ? new Date(event.fecha).toLocaleString('es-CO', {
+            dateStyle: 'medium',
+            timeStyle: 'short'
+          })
+        : 'Fecha no disponible';
+
+      const code = bottleCodes[event.botella_id];
+
+      detail.textContent =
+        (code ? 'Botella: ' + code + ' · ' : '') + date;
+
+      item.append(title, detail);
+      list.appendChild(item);
+    }
+  } catch (error) {
+    console.error('Error cargando historial:', error);
+    list.textContent =
+      'No fue posible cargar el historial. Verifica la conexión y los permisos de Supabase.';
+  }
+}
+
+
+  
 async function loadUserBenefits(userId){
   try{
     const {data,error}=await clyckDB.from('devoluciones')
