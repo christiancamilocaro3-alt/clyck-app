@@ -608,15 +608,17 @@ async function loadUserHistory(userId) {
     }
 
     
+
 const labels = {
-  apertura: 'Visitaste la experiencia de tu botella',
+  apertura: 'Primera visita a tu experiencia CLYCK',
   botella_asociada: 'Botella asociada a tu cuenta',
   devolucion: 'Devolución registrada',
-  devolucion_solicitada: 'Devolución solicitada',
-  devolucion_confirmada: 'Devolución confirmada',
+  devolucion_solicitada: 'Solicitaste la devolución de tu botella',
+  devolucion_confirmada: 'Tu devolución fue confirmada',
   compra: 'Compra registrada',
-  puntos_obtenidos: 'Puntos CLYCK obtenidos'
+  puntos_obtenidos: 'Puntos recibidos'
 };
+
 
 const icons = {
   apertura: '🍷',
@@ -632,6 +634,9 @@ const icons = {
     list.replaceChildren();
 
     for (const event of events) {
+      if (event.accion === 'apertura') {
+  continue;
+}
       const item = document.createElement('div');
       item.style.cssText =
         'padding:12px 0;border-bottom:1px solid #e5e5e5';
