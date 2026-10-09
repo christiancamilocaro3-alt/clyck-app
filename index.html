@@ -444,15 +444,21 @@ async function startBottleAssociation(){
 }
 
 
-function clyckAuthRedirectUrl(){
-  const url = new URL('confirmacion.html', window.location.href);
-  const botella = new URLSearchParams(window.location.search).get('botella');
+function clyckAuthRedirectUrl() {
+  const params = new URLSearchParams(window.location.search);
+  const botella = params.get('botella');
 
   if (botella) {
-    url.searchParams.set('botella', botella);
+    sessionStorage.setItem('clyck_botella_pendiente', botella);
   }
 
-  return url.toString();
+  const destino = new URL('confirmacion.html', window.location.href);
+
+  if (botella) {
+    destino.searchParams.set('botella', botella);
+  }
+
+  return destino.toString();
 }
 
 
