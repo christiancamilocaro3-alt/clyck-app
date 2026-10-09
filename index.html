@@ -651,9 +651,44 @@ for (const ret of returns || []) {
   });
 }
 
+
 events.sort((a, b) =>
-  new Date(b.fecha || 0) - new Date(a.fecha || 0)
+  new Date(a.fecha || 0) - new Date(b.fecha || 0)
 );
+
+// Colocar los puntos inmediatamente después de su devolución confirmada
+for (let i = 0; i < events.length; i++) {
+  if (events[i].accion !== 'puntos_obtenidos') continue;
+
+  const puntos = events[i];
+
+  // Buscar la confirmación de devolución de la misma botella
+  const confirmacionIndex = events.findIndex((evento, index) =>
+    index !== i &&
+    evento.accion === 'devolucion_confirmada' &&
+    String(evento.botella_id) === String(puntos.botella_id)
+  );
+
+  if (confirmacionIndex !== -1) {
+    events.splice(i, 1);
+    const nuevoIndex = events.findIndex(evento =>
+      evento === events[confirmacionIndex > i
+        ? confirmacionIndex - 1
+        : confirmacionIndex]
+    );
+
+    // Insertar los puntos justo después de la confirmación
+    const confirmacionActual = events.findIndex(evento =>
+      evento.accion === 'devolucion_confirmada' &&
+      String(evento.botella_id) === String(puntos.botella_id)
+    );
+
+    if (confirmacionActual !== -1) {
+      events.splice(confirmacionActual + 1, 0, puntos);
+    }
+  }
+}
+
 
 
     list.replaceChildren();
