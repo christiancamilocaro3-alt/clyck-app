@@ -64,10 +64,12 @@
       Estamos validando la confirmación de tu correo electrónico.
     </p>
     <p id="status" role="status"></p>
-    <button id="continuar" hidden
-      onclick="location.href='./index.html'">
-      Continuar a CLYCK
-    </button>
+    
+<button id="continuar" hidden
+  onclick="continuarAClyck()">
+  Continuar a CLYCK
+</button>
+    
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -82,6 +84,27 @@
       SUPABASE_URL,
       SUPABASE_KEY
     );
+
+    function continuarAClyck() {
+  const params = new URLSearchParams(window.location.search);
+
+  // Recuperar el código de la botella de la URL actual
+  let botella = params.get('botella');
+
+  // Si no está en la URL, intentar recuperarlo de sessionStorage
+  if (!botella) {
+    botella = sessionStorage.getItem('clyck_botella_pendiente');
+  }
+
+  // Construir la dirección de regreso a CLYCK
+  const destino = new URL('./index.html', window.location.href);
+
+  if (botella) {
+    destino.searchParams.set('botella', botella);
+  }
+
+  window.location.href = destino.toString();
+}
 
     async function verificarActivacion() {
       const titulo = document.getElementById('titulo');
