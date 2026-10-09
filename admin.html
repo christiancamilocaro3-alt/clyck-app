@@ -12,8 +12,12 @@ h2{margin:0 0 16px}.field{margin:10px 0}label{display:block;font-size:12px;color
 </style></head><body>
 <header><div><div class="logo">CLYCK</div><div class="sub">Panel administrativo · Vino de Iguaraya</div></div><div id="sessionInfo" class="sub">No autenticado</div></header>
 
+ <main>
+<div id="loginBox" class="login"><h2>Acceso administrativo</h2><div class="field"><label>Correo</label><input id="email" type="email"></div><div class="field"><label>Contraseña</label><input id="password" type="password"></div><button onclick="login()">Ingresar</button><div id="loginMsg"></div></div>
 
-<div style="max-width:1200px;margin:0 auto;padding:18px 24px 0;display:flex;justify-content:flex-end;">
+<div id="app" style="display:none">
+  
+  <div style="max-width:1200px;margin:0 auto;padding:18px 24px 0;display:flex;justify-content:flex-end;">
   <button
     type="button"
     class="cta"
@@ -21,12 +25,7 @@ h2{margin:0 0 16px}.field{margin:10px 0}label{display:block;font-size:12px;color
     📊 Abrir dashboard
   </button>
 </div>
-
-
- <main>
-<div id="loginBox" class="login"><h2>Acceso administrativo</h2><div class="field"><label>Correo</label><input id="email" type="email"></div><div class="field"><label>Contraseña</label><input id="password" type="password"></div><button onclick="login()">Ingresar</button><div id="loginMsg"></div></div>
-
-<div id="app" style="display:none">
+  
 <section class="cards">
 <div class="card"><div class="label">Botellas</div><div class="num" id="nBotellas">—</div></div>
 <div class="card"><div class="label">Asociadas</div><div class="num" id="nAsociadas">—</div></div>
