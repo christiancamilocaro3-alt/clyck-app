@@ -186,15 +186,37 @@ body{min-height:100vh}
     <button class="cta light" onclick="registerReturn()">REGISTRAR DEVOLUCIÓN</button>
   </div>
   <div class="product">
-    <h2>Tu impacto</h2>
-    <p>Avance de botellas recuperadas en la campaña</p>
-    <div class="progress"><i></i></div>
-    <p><b>68 / 100</b> · meta mensual de ejemplo</p>
+    <div class="product" id="impactCard">
+  <h2>♻️ Tu impacto</h2>
+  <p>Cada botella que regresa cuenta.</p>
+
+  <p>
+    <strong id="impactRecovered">0 botellas recuperadas</strong>
+    <br>
+    <small>Con devolución confirmada</small>
+  </p>
+
+  <p>Avance hacia tu próxima meta</p>
+
+  <div
+    class="progress"
+    role="progressbar"
+    aria-label="Progreso de circularidad"
+    aria-valuemin="0"
+    aria-valuemax="100"
+    aria-valuenow="0"
+    id="impactProgress">
+    <i id="impactProgressBar" style="width:0%"></i>
   </div>
-  <div class="section">
-    <div class="info"><strong>Importante:</strong><br>La recuperación y reutilización de envases se realiza únicamente cuando el recipiente cumple las condiciones técnicas y sanitarias establecidas por el productor.</div>
+
+  <p id="impactProgressText">
+    <b>0 de 3 botellas</b> · 0 % completado
+  </p>
+
+  <div class="info" id="impactMilestone" aria-live="polite">
+    Tu primera meta es recuperar 3 botellas.
   </div>
-</section>
+</div>
 
 <section id="profile" class="screen">
   <header class="header">
@@ -428,11 +450,12 @@ async function refreshAccountUI(){
   const {data:{session}}=await clyckDB.auth.getSession();
   const authCard=document.getElementById('authCard');
   const accountCard=document.getElementById('accountCard');
-  if(!session){
-    authCard.style.display='block';
-    accountCard.style.display='none';
-    return;
-  }
+if (!session) {
+  authCard.style.display = 'block';
+  accountCard.style.display = 'none';
+  await loadUserImpact(null);
+  return;
+}
 
   authCard.style.display='none';
   accountCard.style.display='block';
@@ -442,6 +465,7 @@ async function refreshAccountUI(){
   document.getElementById('accountBottle').textContent=clyckBottleId ? clyckBottleCode : 'Sin identificar';
   await loadUserBenefits(session.user.id);
   await loadUserHistory(session.user.id);
+  await loadUserImpact(session.user.id);
   const accountClaimBtn=document.getElementById('accountClaimBtn');
   if(accountClaimBtn) accountClaimBtn.style.display = clyckBottleId ? 'block' : 'none';
 }
@@ -756,8 +780,6 @@ const date = event.fecha
   }
 }
 
-
-  
 async function loadUserBenefits(userId){
   try{
     const {data,error}=await clyckDB.from('devoluciones')
@@ -771,6 +793,67 @@ async function loadUserBenefits(userId){
     console.error('Beneficios:',e);
   }
 }
+  
+async function loadUserImpact(userId) {
+  const recoveredEl = document.getElementById('impactRecovered');
+  const bar = document.getElementById('impactProgressBar');
+  const progress = document.getElementById('impactProgress');
+  const progressText = document.getElementById('impactProgressText');
+  const milestone = document.getElementById('impactMilestone');
+
+  if (!recoveredEl || !bar || !progress || !progressText || !milestone) {
+    return;
+  }
+
+  if (!userId) {
+    recoveredEl.textContent = '0 botellas recuperadas';
+    bar.style.width = '0%';
+    progress.setAttribute('aria-valuenow', '0');
+    progressText.textContent = 'Inicia sesión para consultar tu progreso.';
+    milestone.textContent = 'Tu impacto personal aparecerá aquí.';
+    return;
+  }
+
+  try {
+    const { data, error } = await clyckDB
+      .from('devoluciones')
+      .select('id')
+      .eq('usuario_id', userId)
+      .eq('estado', 'confirmada');
+
+    if (error) throw error;
+
+    const total = (data || []).length;
+    const meta = total < 3 ? 3 : total < 6 ? 6 : 9;
+    const porcentaje = Math.min(100, Math.round((total / meta) * 100));
+
+    recoveredEl.textContent =
+      `${total} ${total === 1 ? 'botella recuperada' : 'botellas recuperadas'}`;
+
+    bar.style.width = `${porcentaje}%`;
+    progress.setAttribute('aria-valuenow', String(porcentaje));
+
+    progressText.textContent = `${Math.min(total, meta)} de ${meta} botellas · ${porcentaje} % completado`;
+
+    if (total >= 9) {
+      milestone.textContent =
+        '🏆 ¡Has alcanzado las metas de 3, 6 y 9 botellas! Gracias por contribuir a la circularidad.';
+    } else if (total > 0 && total % 3 === 0) {
+      milestone.textContent =
+        `🏆 ¡Meta de ${total} botellas alcanzada! Tu siguiente meta es ${meta}.`;
+    } else {
+      const faltan = meta - total;
+      milestone.textContent = total === 0
+        ? 'Tu primera meta es recuperar 3 botellas.'
+        : `¡Vas por buen camino! Te faltan ${faltan} ${faltan === 1 ? 'botella' : 'botellas'} para alcanzar tu próxima meta.`;
+    }
+  } catch (error) {
+    console.error('Error cargando Tu impacto:', error);
+    milestone.textContent =
+      'No pudimos actualizar tu progreso. Inténtalo nuevamente.';
+  }
+}
+
 
 async function clyckLoadProduct(){
   const status=document.getElementById('connectionStatus');
