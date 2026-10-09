@@ -630,6 +630,31 @@ const icons = {
   puntos_obtenidos: '⭐'
 };
 
+    
+const { data: returns, error: returnsError } = await clyckDB
+  .from('devoluciones')
+  .select('id, botella_id, puntos, estado, confirmada_en')
+  .eq('usuario_id', userId)
+  .eq('estado', 'confirmada');
+
+if (returnsError) throw returnsError;
+
+for (const ret of returns || []) {
+  if (!ret.puntos || ret.puntos <= 0) continue;
+
+  events.push({
+    id: `puntos-${ret.id}`,
+    accion: 'puntos_obtenidos',
+    fecha: ret.confirmada_en,
+    botella_id: ret.botella_id,
+    puntos: ret.puntos
+  });
+}
+
+events.sort((a, b) =>
+  new Date(b.fecha || 0) - new Date(a.fecha || 0)
+);
+
 
     list.replaceChildren();
 
@@ -645,8 +670,10 @@ const icons = {
 const title = document.createElement('strong');
 const icon = icons[event.accion] || '📌';
 const label = labels[event.accion] || 'Actividad registrada';
-
-title.textContent = `${icon} ${label}`;
+const tituloEvento = event.accion === 'puntos_obtenidos'
+  ? `Recibiste ${event.puntos} puntos CLYCK`
+  : label;
+title.textContent = `${icon} ${tituloEvento}`;
 title.style.display = 'block';
 title.style.fontSize = '16px';
 title.style.marginBottom = '6px';
