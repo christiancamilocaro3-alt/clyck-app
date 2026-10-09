@@ -60,13 +60,53 @@ async function cargar(){
  document.getElementById('interacciones').innerHTML=inter.slice(0,30).map(x=>`<tr><td>${fecha(x.fecha)}</td><td>${esc(bots.find(z=>z.id===x.botella_id)?.codigo||x.botella_id)}</td><td>${esc(x.accion)}</td><td>${x.usuario_id?esc(x.usuario_id):'Anónimo'}</td></tr>`).join('')||'<tr><td colspan="4" class="empty">Sin interacciones.</td></tr>';
  estado.textContent='Actualizado · '+new Date().toLocaleTimeString('es-CO');
 }
-async function confirmar(id,codigo){
- if(!confirm('¿Confirmar que CLYCK/Yosü recibió físicamente la botella '+codigo+'? Esto otorgará 100 puntos y marcará la botella como recuperada.'))return;
- const {error}=await db.rpc('confirm_bottle_return',{p_botella_id:id});
- if(error){alert(error.message);return;}
- alert('Recepción confirmada. '+codigo+' quedó como recuperada y se otorgaron 100 puntos.');
- await cargar();
+
+async function confirmar(id, codigo) {
+  if (!confirm(
+    '¿Confirmar que CLYCK/Yosü recibió físicamente la botella ' +
+    codigo +
+    '? Esto otorgará 100 puntos y marcará la botella como recuperada.'
+  )) return;
+
+  // Primero confirma la devolución en Supabase.
+  const { error } = await db.rpc('confirm_bottle_return', {
+    p_botella_id: id
+  });
+
+  if (error) {
+    alert('No se pudo confirmar la devolución: ' + error.message);
+    return;
+  }
+
+  // Después solicita el envío de la alerta de WhatsApp.
+  const { data: alerta, error: errorAlerta } =
+    await db.functions.invoke('clyck-whatsapp-alerts', {
+      body: {
+        event: 'return_confirmed',
+        bottle_id: id
+      }
+    });
+
+  if (errorAlerta || !alerta?.success) {
+    console.error('Error enviando alerta CLYCK:', errorAlerta || alerta);
+
+    alert(
+      'Recepción confirmada. ' + codigo +
+      ' quedó como recuperada y se otorgaron 100 puntos.\n\n' +
+      'La notificación de WhatsApp no pudo confirmarse. ' +
+      'Revisa los registros de la Edge Function.'
+    );
+  } else {
+    alert(
+      'Recepción confirmada. ' + codigo +
+      ' quedó como recuperada y se otorgaron 100 puntos.\n\n' +
+      'La solicitud de notificación fue enviada a CallMeBot.'
+    );
+  }
+
+  await cargar();
 }
+ 
 document.getElementById('buscar').addEventListener('input',cargar);
 db.auth.getSession().then(async({data})=>{
  if(data.session){
