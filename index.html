@@ -607,12 +607,27 @@ async function loadUserHistory(userId) {
       }
     }
 
-    const labels = {
-      apertura: 'Visitaste la experiencia de tu botella',
-      botella_asociada: 'Asociaste una botella a tu cuenta',
-      devolucion: 'Registraste una devolución',
-      devolucion_confirmada: 'Tu devolución fue confirmada'
-    };
+    
+const labels = {
+  apertura: 'Visitaste la experiencia de tu botella',
+  botella_asociada: 'Botella asociada a tu cuenta',
+  devolucion: 'Devolución registrada',
+  devolucion_solicitada: 'Devolución solicitada',
+  devolucion_confirmada: 'Devolución confirmada',
+  compra: 'Compra registrada',
+  puntos_obtenidos: 'Puntos CLYCK obtenidos'
+};
+
+const icons = {
+  apertura: '🍷',
+  botella_asociada: '🔗',
+  devolucion: '♻️',
+  devolucion_solicitada: '📦',
+  devolucion_confirmada: '✅',
+  compra: '🛍️',
+  puntos_obtenidos: '⭐'
+};
+
 
     list.replaceChildren();
 
