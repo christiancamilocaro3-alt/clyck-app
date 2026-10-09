@@ -134,7 +134,7 @@ body{min-height:100vh}
       <button class="cta" onclick="go('product')">DESCUBRIR PRODUCTO</button>
     </div>
   </div>
-  <div class="section">
+<div class="section" id="discoverHome">
     <h2>Descubre</h2>
     <div class="grid">
       <button class="card" onclick="openM('origin')"><div class="icon">🌵</div><b>La iguaraya</b><small>Origen, territorio y cultura</small></button>
@@ -310,11 +310,24 @@ pairing:`<h2>🍽️ Maridaje</h2>
 <p>Aquí se pueden presentar recomendaciones de alimentos, temperatura de servicio, tipo de copa y momentos de consumo, ajustadas a las características reales del vino.</p>`
 };
 
-function go(id){
-  document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));
+function go(id) {
+  document.querySelectorAll('.screen').forEach(x =>
+    x.classList.remove('active')
+  );
+
   document.getElementById(id).classList.add('active');
-  document.querySelectorAll('.nav').forEach(x=>x.classList.toggle('active',x.dataset.go===id));
-  window.scrollTo(0,0);
+
+  document.querySelectorAll('.nav').forEach(x =>
+    x.classList.toggle('active', x.dataset.go === id)
+  );
+
+  const discoverHome = document.getElementById('discoverHome');
+
+  if (discoverHome) {
+    discoverHome.style.display = id === 'home' ? 'none' : '';
+  }
+
+  window.scrollTo(0, 0);
 }
 function openM(k){
   document.getElementById('modalContent').innerHTML=modalContent[k];
