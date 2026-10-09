@@ -444,10 +444,9 @@ async function startBottleAssociation(){
 }
 
 function clyckAuthRedirectUrl(){
-  // Usa automáticamente la URL de la aplicación actual:
-  // GitHub Pages -> https://christiancamilocaro3-alt.github.io/clyck-app/
-  // Local -> http://localhost:3000/
-  return window.location.origin + window.location.pathname;
+  const url = new URL(window.location.href);
+  url.hash = '';
+  return url.toString();
 }
 
 async function signUp(){
