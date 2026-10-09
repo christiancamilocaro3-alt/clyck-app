@@ -1,0 +1,158 @@
+
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Activación exitosa | CLYCK</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 20px;
+      font-family: system-ui, Arial, sans-serif;
+      background: #f4f7f5;
+      color: #16352c;
+    }
+    .card {
+      width: 100%;
+      max-width: 440px;
+      padding: 36px 26px;
+      text-align: center;
+      background: white;
+      border: 1px solid #e1e9e4;
+      border-radius: 22px;
+      box-shadow: 0 12px 40px #12332612;
+    }
+    .check {
+      width: 72px;
+      height: 72px;
+      margin: 0 auto 20px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: #e1f5e8;
+      color: #16804a;
+      font-size: 38px;
+      font-weight: 800;
+    }
+    h1 { font-size: 25px; margin: 0 0 12px; }
+    p { line-height: 1.6; color: #62736b; }
+    button {
+      width: 100%;
+      margin-top: 18px;
+      padding: 14px;
+      border: 0;
+      border-radius: 11px;
+      background: #10382c;
+      color: white;
+      font-weight: 700;
+      font-size: 15px;
+      cursor: pointer;
+    }
+    #status { font-size: 13px; }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <div class="check" id="icono">✓</div>
+    <h1 id="titulo">Verificando tu cuenta…</h1>
+    <p id="mensaje">
+      Estamos validando la confirmación de tu correo electrónico.
+    </p>
+    <p id="status" role="status"></p>
+    <button id="continuar" hidden
+      onclick="location.href='./index.html'">
+      Continuar a CLYCK
+    </button>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const SUPABASE_URL =
+      'https://igfjlxikvcdzrkithwrc.supabase.co';
+
+    const SUPABASE_KEY =
+      'sb_publishable_T8bVVgFPqp9fOE-usb2MYQ_et1O2elh';
+
+    const db = supabase.createClient(
+      SUPABASE_URL,
+      SUPABASE_KEY
+    );
+
+    async function verificarActivacion() {
+      const titulo = document.getElementById('titulo');
+      const mensaje = document.getElementById('mensaje');
+      const status = document.getElementById('status');
+      const boton = document.getElementById('continuar');
+
+      try {
+        const params = new URLSearchParams(location.search);
+        const hash = new URLSearchParams(
+          location.hash.replace(/^#/, '')
+        );
+
+        const error = params.get('error_description')
+          || hash.get('error_description');
+
+        if (error) {
+          throw new Error(error);
+        }
+
+        // Supabase procesa el enlace de confirmación
+        // durante la inicialización del cliente.
+        const { data, error: sessionError } =
+          await db.auth.getSession();
+
+        if (sessionError) throw sessionError;
+
+        if (data.session) {
+          titulo.textContent = '¡Activación exitosa!';
+          mensaje.textContent =
+            'Tu correo electrónico ha sido verificado y tu cuenta CLYCK está activa. Ya puedes continuar y asociar tu botella.';
+          status.textContent = '';
+          boton.hidden = false;
+          return;
+        }
+
+        // En algunos flujos la confirmación no inicia
+        // una sesión automáticamente.
+        const code = params.get('code');
+
+        if (code) {
+          const { data: exchanged, error: exchangeError } =
+            await db.auth.exchangeCodeForSession(code);
+
+          if (exchangeError) throw exchangeError;
+
+          if (exchanged.session) {
+            titulo.textContent = '¡Activación exitosa!';
+            mensaje.textContent =
+              'Tu correo electrónico ha sido verificado y tu cuenta CLYCK está activa. Ya puedes continuar y asociar tu botella.';
+            boton.hidden = false;
+            return;
+          }
+        }
+
+        titulo.textContent = 'Confirmación recibida';
+        mensaje.textContent =
+          'Si acabas de confirmar tu correo, intenta ingresar a CLYCK con tu cuenta. Si no funciona, solicita un nuevo enlace de confirmación.';
+        boton.hidden = false;
+
+      } catch (e) {
+        titulo.textContent = 'No pudimos verificar la cuenta';
+        mensaje.textContent =
+          'El enlace puede haber vencido o ya haber sido utilizado. Intenta iniciar sesión o solicita un nuevo correo de confirmación.';
+        status.textContent = e.message || '';
+        document.getElementById('icono').textContent = '!';
+        document.getElementById('icono').style.color = '#a12727';
+      }
+    }
+
+    verificarActivacion();
+  </script>
+</body>
+</html>
