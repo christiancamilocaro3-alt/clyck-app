@@ -636,19 +636,32 @@ const icons = {
       item.style.cssText =
         'padding:12px 0;border-bottom:1px solid #e5e5e5';
 
-      const title = document.createElement('strong');
-      title.textContent =
-        labels[event.accion] || event.accion || 'Actividad CLYCK';
+ 
+const title = document.createElement('strong');
+const icon = icons[event.accion] || '📌';
+const label = labels[event.accion] || 'Actividad registrada';
+
+title.textContent = `${icon} ${label}`;
+title.style.display = 'block';
+title.style.fontSize = '16px';
+title.style.marginBottom = '6px';
+
 
       const detail = document.createElement('p');
       detail.style.margin = '6px 0';
 
-      const date = event.fecha
-        ? new Date(event.fecha).toLocaleString('es-CO', {
-            dateStyle: 'medium',
-            timeStyle: 'short'
-          })
-        : 'Fecha no disponible';
+      
+const date = event.fecha
+  ? new Date(event.fecha).toLocaleString('es-CO', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    })
+  : 'Fecha no disponible';
+
 
       const code = bottleCodes[event.botella_id];
 
