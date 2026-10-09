@@ -443,11 +443,18 @@ async function startBottleAssociation(){
   document.getElementById('bottleIdentifyStep')?.scrollIntoView({behavior:'smooth',block:'center'});
 }
 
+
 function clyckAuthRedirectUrl(){
-  const url = new URL(window.location.href);
-  url.hash = '';
+  const url = new URL('confirmacion.html', window.location.href);
+  const botella = new URLSearchParams(window.location.search).get('botella');
+
+  if (botella) {
+    url.searchParams.set('botella', botella);
+  }
+
   return url.toString();
 }
+
 
 async function signUp(){
   const nombre=document.getElementById('authName').value.trim();
