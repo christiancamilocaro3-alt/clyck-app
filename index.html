@@ -562,8 +562,13 @@ async function claimCurrentBottle(silent=false){
     else show('No se pudo asociar la botella.');
     return;
   }
-  if (claimed) {
+if (claimed) {
   await clyckRegisterInteraction('botella_asociada');
+
+  await clyckSendWhatsAppAlert(
+    'bottle_associated',
+    clyckBottleId
+  );
 }
   show(claimed ? '✓ Botella asociada a tu cuenta CLYCK.' : '✓ Botella ya asociada a tu cuenta.');
   const identifyStep=document.getElementById('bottleIdentifyStep');
