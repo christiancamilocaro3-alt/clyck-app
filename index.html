@@ -416,6 +416,12 @@ async function registerReturn(){
   await clyckRegisterInteraction('devolucion_solicitada');
   await loadUserBenefits(session.user.id);
   await refreshAccountUI();
+
+  await clyckSendWhatsAppAlert(
+  'return_requested',
+  clyckBottleId
+);
+  
   show('✓ Solicitud enviada. Yosü confirmará la recepción para otorgar 100 puntos.');
   go('profile');
 }
