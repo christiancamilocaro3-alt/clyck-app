@@ -416,13 +416,7 @@ async function registerReturn(){
   await clyckRegisterInteraction('devolucion_solicitada');
   await loadUserBenefits(session.user.id);
   await refreshAccountUI();
-
-  await clyckSendWhatsAppAlert(
-  'return_requested',
-  clyckBottleId
-);
-
-  await clyckSendWhatsAppAlert(
+    await clyckSendWhatsAppAlert(
   'return_requested',
   clyckBottleId
 );  
@@ -433,6 +427,35 @@ const CLYCK_SUPABASE_URL='https://igfjlxikvcdzrkithwrc.supabase.co';
 const CLYCK_SUPABASE_KEY='sb_publishable_T8bVVgFPqp9fOE-usb2MYQ_et1O2elh';
 const clyckDB=window.supabase.createClient(CLYCK_SUPABASE_URL,CLYCK_SUPABASE_KEY);
 
+  async function clyckSendWhatsAppAlert(event, bottleId) {
+  try {
+    const { data, error } = await clyckDB.functions.invoke(
+      'clyck-whatsapp-alerts',
+      {
+        body: {
+          event: event,
+          bottle_id: bottleId
+        }
+      }
+    );
+
+    if (error) {
+      console.error('Error enviando alerta WhatsApp:', error);
+      return false;
+    }
+
+    if (!data?.success) {
+      console.error('Alerta WhatsApp no confirmada:', data);
+      return false;
+    }
+
+    console.log('Alerta WhatsApp enviada:', event);
+    return true;
+  } catch (error) {
+    console.error('Error de conexión con WhatsApp:', error);
+    return false;
+  }
+}
 
 async function refreshAccountUI(){
   const {data:{session}}=await clyckDB.auth.getSession();
