@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>Yosü · Vino de Iguaraya · CLYCK</title>
+<title>Yosü · Vino de Iguaraya </title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{
@@ -202,13 +202,13 @@ body{min-height:100vh}
     <div class="pill">MI EXPERIENCIA</div>
   </header>
   <div class="hero">
-    <div class="eyebrow">CLYCK · CUENTA PERSONAL</div>
+    <div class="eyebrow">Yosü · CUENTA PERSONAL</div>
     <h1>Tu experiencia</h1>
     <p>Regístrate para asociar tu botella a tu cuenta y proteger tus beneficios de devolución.</p>
   </div>
 
   <div class="auth-card" id="authCard">
-    <div class="account-badge" id="authBadge">CUENTA CLYCK</div>
+    <div class="account-badge" id="authBadge">CUENTA Yosü</div>
     <h2 id="authTitle">Crea tu cuenta</h2>
     <p id="authDescription">Con una cuenta podemos saber quién registra una botella y evitar que una misma botella genere beneficios repetidos.</p>
 
@@ -220,14 +220,14 @@ body{min-height:100vh}
       <button class="cta" id="signupBtn" onclick="signUp()">CREAR CUENTA</button>
       <button class="cta gold" id="loginBtn" onclick="signIn()">INICIAR SESIÓN</button>
     </div>
-    <p class="auth-note">Recibirás un correo de confirmación para activar tu cuenta CLYCK.</p>
+    <p class="auth-note">Recibirás un correo de confirmación para activar tu cuenta.</p>
   </div>
 
   <div class="auth-card" id="accountCard" style="display:none">
     <div id="signupSuccessFlow" style="display:none">
       <div class="account-badge">✓ CUENTA CREADA</div>
       <h2>¡Cuenta creada correctamente!</h2>
-      <p>Ahora asocia tu botella para activar tu experiencia CLYCK.</p>
+      <p>Ahora asocia tu botella para activar tu experiencia Yosü.</p>
       <div class="auth-actions">
         <button class="cta" id="startBottleBtn" onclick="startBottleAssociation()">ASOCIAR MI BOTELLA</button>
       </div>
@@ -243,13 +243,13 @@ body{min-height:100vh}
       <div id="bottleSuccessStep" style="display:none;margin-top:14px">
         <div class="info">
           <strong>🎉 ¡Botella asociada!</strong><br>
-          Tu experiencia CLYCK ya está activa.
+          Tu experiencia Yosü ya está activa.
         </div>
       </div>
     </div>
 
     <div class="account-badge">CUENTA ACTIVA</div>
-    <h2 id="accountName">Usuario CLYCK</h2>
+    <h2 id="accountName">Usuario Yosü</h2>
     <p id="accountEmail"></p>
     <p><b>Botella asociada:</b> <span id="accountBottle">Ninguna</span></p>
     <p class="auth-note">La botella queda vinculada a tu cuenta para controlar los beneficios y su devolución.</p>
@@ -263,16 +263,16 @@ body{min-height:100vh}
     <div class="product">
       <h2>🏆 Mis beneficios</h2>
       <p>Retornos registrados: <b id="returns">0</b></p>
-      <p>Puntos CLYCK: <b id="points">0</b></p>
+      <p>Puntos Yosü: <b id="points">0</b></p>
     </div>
     <div class="product">
       <h2>🔒 Identidad del producto</h2>
-      <p>La botella tiene un identificador digital y, cuando el usuario inicia sesión, CLYCK puede asociar la experiencia a una cuenta sin exponer información personal públicamente.</p>
+      <p>La botella tiene un identificador digital y, cuando el usuario inicia sesión, Yosü puede asociar la experiencia a una cuenta sin exponer información personal públicamente.</p>
     </div>
   </div>
   <div class="product" id="userHistoryCard">
   <h2>📋 Mi historial</h2>
-  <p>Consulta las actividades registradas en tu experiencia CLYCK.</p>
+  <p>Consulta las actividades registradas en tu experiencia Yosü.</p>
   <div id="historyList" aria-live="polite">
     <p>Inicia sesión para consultar tu historial.</p>
   </div>
@@ -300,7 +300,7 @@ const clyckBottleCode=/^[A-Za-z0-9_-]{1,80}$/.test(requestedBottleCode) ? reques
 
 const modalContent={
 origin:`<h2>🌵 La iguaraya</h2>
-<p>La iguaraya es uno de los frutos representativos de los paisajes áridos de La Guajira. En esta experiencia, CLYCK permite conectar el producto con su territorio y contar su historia.</p>
+<p>La iguaraya es uno de los frutos representativos de los paisajes áridos de La Guajira. En esta experiencia, permite conectar el producto con su territorio y contar su historia.</p>
 <p>Aquí podremos incorporar fotografías reales, información cultural, origen del fruto y contenido del productor.</p>`,
 wine:`<h2>🍷 Ficha del producto</h2>
 <p><b>Producto:</b> Vino de Iguaraya<br><b>Lote:</b> IG-2026-04<br><b>Botella:</b> ${clyckBottleCode}</p>
@@ -469,7 +469,7 @@ async function refreshAccountUI(){
 
   authCard.style.display='none';
   accountCard.style.display='block';
-  const name=session.user.user_metadata?.nombre || session.user.email?.split('@')[0] || 'Usuario CLYCK';
+  const name=session.user.user_metadata?.nombre || session.user.email?.split('@')[0] || 'Usuario Yosü';
   document.getElementById('accountName').textContent=name;
   document.getElementById('accountEmail').textContent=session.user.email || '';
   document.getElementById('accountBottle').textContent=clyckBottleId ? clyckBottleCode : 'Sin identificar';
@@ -481,7 +481,7 @@ async function refreshAccountUI(){
 
 async function ensureProfile(session){
   if(!session?.user)return;
-  const nombre=session.user.user_metadata?.nombre || session.user.email?.split('@')[0] || 'Usuario CLYCK';
+  const nombre=session.user.user_metadata?.nombre || session.user.email?.split('@')[0] || 'Usuario Yosü';
   const {error}=await clyckDB.from('perfiles').upsert({id:session.user.id,nombre},{onConflict:'id'});
   if(error)console.error('Perfil:',error);
 }
@@ -603,7 +603,7 @@ if (claimed) {
     clyckBottleId
   );
 }
-  show(claimed ? '✓ Botella asociada a tu cuenta CLYCK.' : '✓ Botella ya asociada a tu cuenta.');
+  show(claimed ? '✓ Botella asociada a tu cuenta Yosü.' : '✓ Botella ya asociada a tu cuenta.');
   const identifyStep=document.getElementById('bottleIdentifyStep');
   const successStep=document.getElementById('bottleSuccessStep');
   const claimBtn=document.getElementById('claimBottleBtn');
@@ -659,7 +659,7 @@ async function loadUserHistory(userId) {
     
 
 const labels = {
-  apertura: 'Primera visita a tu experiencia CLYCK',
+  apertura: 'Primera visita a tu experiencia Yosü',
   botella_asociada: 'Botella asociada a tu cuenta',
   devolucion: 'Devolución registrada',
   devolucion_solicitada: 'Solicitaste la devolución de tu botella',
@@ -755,7 +755,7 @@ const title = document.createElement('strong');
 const icon = icons[event.accion] || '📌';
 const label = labels[event.accion] || 'Actividad registrada';
 const tituloEvento = event.accion === 'puntos_obtenidos'
-  ? `Recibiste ${event.puntos} puntos CLYCK`
+  ? `Recibiste ${event.puntos} puntos Yosü`
   : label;
 title.textContent = `${icon} ${tituloEvento}`;
 title.style.display = 'block';
@@ -818,7 +818,7 @@ async function clyckLoadProduct(){
     if(be)throw be;
     clyckBottleId=bottle.id;
     status.className='status ok';
-    status.textContent='✓ Botella identificada · experiencia CLYCK activa';
+    status.textContent='✓ Botella identificada · experiencia Yosü activa';
     document.getElementById('bottleState').textContent=bottle.codigo;
     const headerCode=document.getElementById('headerBottleCode');
     const heroCode=document.getElementById('heroBottleCode');
@@ -826,7 +826,7 @@ async function clyckLoadProduct(){
     if(headerCode)headerCode.textContent=bottle.codigo;
     if(heroCode)heroCode.textContent=bottle.codigo;
     if(identifyCode)identifyCode.textContent=bottle.codigo;
-    document.title='CLYCK · Botella #'+bottle.codigo;
+    document.title='Yosü · Botella #'+bottle.codigo;
     await clyckRegisterInteraction('apertura');
     await refreshAccountUI();
   }catch(e){
