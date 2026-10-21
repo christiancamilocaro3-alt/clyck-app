@@ -493,6 +493,76 @@ const clyckDB=window.supabase.createClient(CLYCK_SUPABASE_URL,CLYCK_SUPABASE_KEY
 }
 
 
+async function loadEnvironmentalImpact(userId) {
+  const countElement = document.getElementById('impactBottleCount');
+  const goalElement = document.getElementById('impactBottleGoal');
+  const progressBar = document.getElementById('impactProgressBar');
+  const messageElement = document.getElementById('impactMessage');
+
+  if (!countElement || !goalElement || !progressBar || !messageElement) {
+    return;
+  }
+
+  const { data, error } = await clyckDB
+    .from('devoluciones')
+    .select('id')
+    .eq('usuario_id', userId)
+    .eq('estado', 'confirmada');
+
+  if (error) {
+    console.error('No se pudo cargar el impacto ambiental:', error);
+    messageElement.textContent =
+      'Cada botella que recuperas es una oportunidad para cuidar nuestra tierra.';
+    return;
+  }
+
+  const count = (data || []).length;
+
+  let goal;
+  if (count <= 3) {
+    goal = 3;
+  } else if (count <= 6) {
+    goal = 6;
+  } else if (count <= 9) {
+    goal = 9;
+  } else {
+    goal = Math.ceil(count / 3) * 3;
+  }
+
+  countElement.textContent = count;
+  goalElement.textContent = goal;
+  progressBar.style.width = Math.min(100, (count / goal) * 100) + '%';
+
+  if (count === 0) {
+    messageElement.textContent =
+      'Tu primera botella puede ser el comienzo de un gran cambio.';
+  } else if (count < 3) {
+    messageElement.textContent =
+      '¡Vas por buen camino! Cada botella recuperada suma al cuidado del planeta.';
+  } else if (count === 3) {
+    messageElement.textContent =
+      '¡Primera meta alcanzada! Has contribuido a recuperar 3 botellas. ¡Sigamos!';
+  } else if (count < 6) {
+    messageElement.textContent =
+      '¡Sigue así! Tus acciones ayudan a impulsar la economía circular.';
+  } else if (count === 6) {
+    messageElement.textContent =
+      '¡Ya recuperaste 6 botellas! Tu compromiso con el ambiente sigue creciendo.';
+  } else if (count < 9) {
+    messageElement.textContent =
+      'Cada botella que vuelve es una oportunidad más para cuidar nuestra tierra.';
+  } else if (count === 9) {
+    messageElement.textContent =
+      '¡Meta de 9 botellas alcanzada! Gracias por ser parte del cambio.';
+  } else {
+    messageElement.textContent =
+      '¡Excelente compromiso ambiental! Cada devolución cuenta.';
+  }
+}
+
+  
+
+  
 async function refreshAccountUI() {
   const { data: { session } } = await clyckDB.auth.getSession();
   const authCard = document.getElementById('authCard');
@@ -518,6 +588,7 @@ async function refreshAccountUI() {
 
   await loadUserBenefits(session.user.id);
   await loadUserHistory(session.user.id);
+  await loadEnvironmentalImpact(session.user.id);
 
   const accountClaimBtn =
     document.getElementById('accountClaimBtn');
