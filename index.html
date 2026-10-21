@@ -504,8 +504,38 @@ if (accountClaimBtn) {
   accountClaimBtn.style.display = hasBottle ? 'none' : 'block';
 }
 
+const accountClaimBtn = document.getElementById('accountClaimBtn');
+const accountBottleStatus = document.getElementById('accountBottleStatus');
+
+let isBottleAssociated = false;
+
+if (clyckBottleId) {
+  const { data: bottle, error } = await clyckDB
+    .from('botellas')
+    .select('id, usuario_id')
+    .eq('id', clyckBottleId)
+    .maybeSingle();
+
+  if (error) {
+    console.error('No se pudo verificar la asociación:', error);
+  } else {
+    isBottleAssociated = bottle?.usuario_id === session.user.id;
+  }
+}
+
+if (accountClaimBtn) {
+  accountClaimBtn.style.display =
+    clyckBottleId && !isBottleAssociated ? 'block' : 'none';
+}
+
 if (accountBottleStatus) {
-  accountBottleStatus.style.display = hasBottle ? 'inline-block' : 'none';
+  accountBottleStatus.style.display =
+    isBottleAssociated ? 'inline-block' : 'none';
+}
+
+if (clyckBottleId && !isBottleAssociated) {
+  document.getElementById('accountBottle').textContent =
+    clyckBottleCode + ' — pendiente de asociar';
 }
 }  // Cierra refreshAccountUI()
 
