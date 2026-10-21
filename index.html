@@ -253,11 +253,14 @@ body{min-height:100vh}
     <p id="accountEmail"></p>
     <p><b>Botella asociada:</b> <span id="accountBottle">Ninguna</span></p>
     <p class="auth-note">La botella queda vinculada a tu cuenta para controlar los beneficios y su devolución.</p>
-    <div class="auth-actions">
-      <button class="cta" id="accountClaimBtn" onclick="claimCurrentBottle()">ASOCIAR ESTA BOTELLA</button>
-      <button class="cta danger" onclick="signOut()">CERRAR SESIÓN</button>
-    </div>
-  </div>
+
+<div class="auth-actions">
+  <button class="cta" id="accountClaimBtn" onclick="claimCurrentBottle()">ASOCIAR ESTA BOTELLA</button>
+  <span id="accountBottleStatus" class="auth-note" style="display:none; color:#247443; font-weight:700;">
+    ✓ BOTELLA ASOCIADA
+  </span>
+  <button class="cta danger" onclick="signOut()">CERRAR SESIÓN</button>
+</div>
 
   <div class="section">
     <div class="product">
@@ -475,9 +478,19 @@ async function refreshAccountUI(){
   document.getElementById('accountBottle').textContent=clyckBottleId ? clyckBottleCode : 'Sin identificar';
   await loadUserBenefits(session.user.id);
   await loadUserHistory(session.user.id);
-  const accountClaimBtn=document.getElementById('accountClaimBtn');
-  if(accountClaimBtn) accountClaimBtn.style.display = clyckBottleId ? 'block' : 'none';
+
+const accountClaimBtn = document.getElementById('accountClaimBtn');
+const accountBottleStatus = document.getElementById('accountBottleStatus');
+const hasBottle = Boolean(clyckBottleId);
+
+if (accountClaimBtn) {
+  accountClaimBtn.style.display = hasBottle ? 'none' : 'block';
 }
+
+if (accountBottleStatus) {
+  accountBottleStatus.style.display = hasBottle ? 'inline-block' : 'none';
+}
+
 
 async function ensureProfile(session){
   if(!session?.user)return;
