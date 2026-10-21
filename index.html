@@ -98,6 +98,24 @@ body{min-height:100vh}
 .danger{background:#f7e8e8;color:#7b1238}
 .auth-note{font-size:10px!important;margin-top:10px!important}
 
+
+.iguaraya-video {
+  width: 100%;
+  margin: 16px 0;
+  overflow: hidden;
+  border-radius: 12px;
+  background: #243b2b;
+  aspect-ratio: 16 / 9;
+}
+
+.iguaraya-video iframe {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+  
 </style>
 </head>
 <body>
@@ -328,6 +346,18 @@ const clyckBottleCode=/^[A-Za-z0-9_-]{1,80}$/.test(requestedBottleCode) ? reques
 const modalContent={
 origin:`<h2>🌵 La iguaraya</h2>
 <p>La iguaraya es uno de los frutos representativos de los paisajes áridos de La Guajira. En esta experiencia, permite conectar el producto con su territorio y contar su historia.</p>
+
+<div class="iguaraya-video">
+  <iframe
+    src="https://www.youtube-nocookie.com/embed/TaaFZal8Vlw"
+    title="Conoce la iguaraya de La Guajira"
+    loading="lazy"
+    referrerpolicy="strict-origin-when-cross-origin"
+    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+    allowfullscreen>
+  </iframe>
+</div>
+
 <p>Aquí podremos incorporar fotografías reales, información cultural, origen del fruto y contenido del productor.</p>`,
 wine:`<h2>🍷 Ficha del producto</h2>
 <p><b>Producto:</b> Vino de Iguaraya<br><b>Lote:</b> IG-2026-04<br><b>Botella:</b> ${clyckBottleCode}</p>
