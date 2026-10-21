@@ -183,8 +183,13 @@ body{min-height:100vh}
   <div class="promo">
     <h2>10% de beneficio</h2>
     <p>Al entregar una botella que cumpla las condiciones técnicas y sanitarias definidas por el productor, puedes recibir un beneficio para una próxima compra.</p>
-    <button class="cta light" onclick="registerReturn()">REGISTRAR DEVOLUCIÓN</button>
-  </div>
+  <button id="registerReturnBtn" class="cta light" onclick="registerReturn()">
+  REGISTRAR DEVOLUCIÓN
+</button>
+
+<p id="returnStatus" style="display:none; color:#247443; font-weight:700; margin-top:12px;">
+  ✓ DEVOLUCIÓN REGISTRADA
+</p>  </div>
   <div class="product">
     <h2>Tu impacto</h2>
     <p>Avance de botellas recuperadas en la campaña</p>
@@ -423,6 +428,18 @@ async function registerReturn(){
   'return_requested',
   clyckBottleId
 );  
+ const returnBtn = document.getElementById('registerReturnBtn');
+  const returnStatus = document.getElementById('returnStatus');
+
+  if (returnBtn) {
+    returnBtn.style.display = 'none';
+  }
+
+  if (returnStatus) {
+    returnStatus.textContent = '✓ DEVOLUCIÓN REGISTRADA';
+    returnStatus.style.display = 'block';
+  }
+
   show('✓ Solicitud enviada. Yosü confirmará la recepción para otorgar 100 puntos.');
   go('profile');
 }
