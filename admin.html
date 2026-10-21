@@ -95,8 +95,15 @@ const { data: devolucion, error: errorDevolucion } = await db
   .maybeSingle();
 
 if (errorDevolucion || !devolucion) {
-  console.error('No se encontró la devolución confirmada:', errorDevolucion);
-  alert('La devolución se confirmó, pero no se pudo identificar su registro para enviar el correo.');
+  console.error(
+    'No se encontró la devolución confirmada:',
+    errorDevolucion
+  );
+  alert(
+    'La devolución se confirmó, pero no se encontró su registro para enviar el correo.'
+  );
+  await cargar();
+  return;
 }
   // Después solicita el envío de la alerta de WhatsApp.
   const { data: alerta, error: errorAlerta } =
