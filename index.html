@@ -477,68 +477,78 @@ const clyckDB=window.supabase.createClient(CLYCK_SUPABASE_URL,CLYCK_SUPABASE_KEY
   }
 }
 
-async function refreshAccountUI(){
-  const {data:{session}}=await clyckDB.auth.getSession();
-  const authCard=document.getElementById('authCard');
-  const accountCard=document.getElementById('accountCard');
-  if(!session){
-    authCard.style.display='block';
-    accountCard.style.display='none';
+
+async function refreshAccountUI() {
+  const { data: { session } } = await clyckDB.auth.getSession();
+  const authCard = document.getElementById('authCard');
+  const accountCard = document.getElementById('accountCard');
+
+  if (!session) {
+    if (authCard) authCard.style.display = 'block';
+    if (accountCard) accountCard.style.display = 'none';
     return;
   }
 
-  authCard.style.display='none';
-  accountCard.style.display='block';
-  const name=session.user.user_metadata?.nombre || session.user.email?.split('@')[0] || 'Usuario Yosü';
-  document.getElementById('accountName').textContent=name;
-  document.getElementById('accountEmail').textContent=session.user.email || '';
-  document.getElementById('accountBottle').textContent=clyckBottleId ? clyckBottleCode : 'Sin identificar';
+  if (authCard) authCard.style.display = 'none';
+  if (accountCard) accountCard.style.display = 'block';
+
+  const name =
+    session.user.user_metadata?.nombre ||
+    session.user.email?.split('@')[0] ||
+    'Usuario Yosü';
+
+  document.getElementById('accountName').textContent = name;
+  document.getElementById('accountEmail').textContent =
+    session.user.email || '';
+
   await loadUserBenefits(session.user.id);
   await loadUserHistory(session.user.id);
 
-const accountClaimBtn = document.getElementById('accountClaimBtn');
-const accountBottleStatus = document.getElementById('accountBottleStatus');
-const hasBottle = Boolean(clyckBottleId);
+  const accountClaimBtn =
+    document.getElementById('accountClaimBtn');
+  const accountBottleStatus =
+    document.getElementById('accountBottleStatus');
+  const accountBottle =
+    document.getElementById('accountBottle');
 
-if (accountClaimBtn) {
-  accountClaimBtn.style.display = hasBottle ? 'none' : 'block';
-}
+  let isBottleAssociated = false;
 
-const accountClaimBtn = document.getElementById('accountClaimBtn');
-const accountBottleStatus = document.getElementById('accountBottleStatus');
+  if (clyckBottleId) {
+    const { data: bottle, error } = await clyckDB
+      .from('botellas')
+      .select('id, codigo, usuario_id')
+      .eq('id', clyckBottleId)
+      .maybeSingle();
 
-let isBottleAssociated = false;
+    if (error) {
+      console.error('Error verificando la botella:', error);
+    } else {
+      isBottleAssociated =
+        bottle?.usuario_id === session.user.id;
 
-if (clyckBottleId) {
-  const { data: bottle, error } = await clyckDB
-    .from('botellas')
-    .select('id, usuario_id')
-    .eq('id', clyckBottleId)
-    .maybeSingle();
+      if (accountBottle) {
+        accountBottle.textContent = bottle
+          ? bottle.codigo +
+            (isBottleAssociated ? '' : ' — pendiente de asociar')
+          : 'Botella no identificada';
+      }
+    }
+  } else if (accountBottle) {
+    accountBottle.textContent = 'Sin identificar';
+  }
 
-  if (error) {
-    console.error('No se pudo verificar la asociación:', error);
-  } else {
-    isBottleAssociated = bottle?.usuario_id === session.user.id;
+  if (accountClaimBtn) {
+    accountClaimBtn.style.display =
+      clyckBottleId && !isBottleAssociated ? 'block' : 'none';
+  }
+
+  if (accountBottleStatus) {
+    accountBottleStatus.style.display =
+      isBottleAssociated ? 'inline-block' : 'none';
   }
 }
 
-if (accountClaimBtn) {
-  accountClaimBtn.style.display =
-    clyckBottleId && !isBottleAssociated ? 'block' : 'none';
-}
-
-if (accountBottleStatus) {
-  accountBottleStatus.style.display =
-    isBottleAssociated ? 'inline-block' : 'none';
-}
-
-if (clyckBottleId && !isBottleAssociated) {
-  document.getElementById('accountBottle').textContent =
-    clyckBottleCode + ' — pendiente de asociar';
-}
-}  // Cierra refreshAccountUI()
-
+  
 async function ensureProfile(session){
   if(!session?.user)return;
   const nombre=session.user.user_metadata?.nombre || session.user.email?.split('@')[0] || 'Usuario Yosü';
