@@ -490,7 +490,7 @@ if (accountClaimBtn) {
 if (accountBottleStatus) {
   accountBottleStatus.style.display = hasBottle ? 'inline-block' : 'none';
 }
-
+}  // Cierra refreshAccountUI()
 
 async function ensureProfile(session){
   if(!session?.user)return;
@@ -807,8 +807,7 @@ const date = event.fecha
   }
 }
 
-
-  
+ 
 async function loadUserBenefits(userId){
   try{
     const {data,error}=await clyckDB.from('devoluciones')
