@@ -86,7 +86,18 @@ async function confirmar(id, codigo) {
     alert('No se pudo confirmar la devolución: ' + error.message);
     return;
   }
+// Buscar la devolución ya confirmada para obtener su ID.
+const { data: devolucion, error: errorDevolucion } = await db
+  .from('devoluciones')
+  .select('id')
+  .eq('botella_id', id)
+  .eq('estado', 'confirmada')
+  .maybeSingle();
 
+if (errorDevolucion || !devolucion) {
+  console.error('No se encontró la devolución confirmada:', errorDevolucion);
+  alert('La devolución se confirmó, pero no se pudo identificar su registro para enviar el correo.');
+}
   // Después solicita el envío de la alerta de WhatsApp.
   const { data: alerta, error: errorAlerta } =
     await db.functions.invoke('clyck-whatsapp-alerts', {
