@@ -190,12 +190,27 @@ body{min-height:100vh}
 <p id="returnStatus" style="display:none; color:#247443; font-weight:700; margin-top:12px;">
   ✓ DEVOLUCIÓN REGISTRADA
 </p>  </div>
-  <div class="product">
-    <h2>Tu impacto</h2>
-    <p>Avance de botellas recuperadas en la campaña</p>
-    <div class="progress"><i></i></div>
-    <p><b>68 / 100</b> · meta mensual de ejemplo</p>
+  
+<div class="product" id="environmentalImpact">
+  <h2>♻️ Cada botella cuenta</h2>
+
+  <p id="impactMessage">
+    Una botella que vuelve es una oportunidad más para cuidar nuestra tierra.
+  </p>
+
+  <div class="progress">
+    <i id="impactProgressBar" style="width:0%"></i>
   </div>
+
+  <p>
+    <b>
+      <span id="impactBottleCount">0</span> /
+      <span id="impactBottleGoal">3</span>
+    </b>
+    · botellas recuperadas por ti
+  </p>
+</div>
+
   <div class="section">
     <div class="info"><strong>Importante:</strong><br>La recuperación y reutilización de envases se realiza únicamente cuando el recipiente cumple las condiciones técnicas y sanitarias establecidas por el productor.</div>
   </div>
