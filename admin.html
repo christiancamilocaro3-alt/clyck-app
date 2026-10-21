@@ -105,6 +105,22 @@ if (errorDevolucion || !devolucion) {
   await cargar();
   return;
 }
+
+ // Enviar confirmación de puntos por correo.
+const { data: correo, error: errorCorreo } =
+  await db.functions.invoke('clyck-points-email', {
+    body: {
+      return_id: devolucion.id
+    }
+  });
+
+if (errorCorreo || !correo?.success) {
+  console.error(
+    'Error enviando correo de puntos:',
+    errorCorreo || correo
+  );
+}
+ 
   // Después solicita el envío de la alerta de WhatsApp.
   const { data: alerta, error: errorAlerta } =
     await db.functions.invoke('clyck-whatsapp-alerts', {
