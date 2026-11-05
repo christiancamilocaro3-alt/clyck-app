@@ -409,6 +409,7 @@ body{min-height:100vh}
 <script>
 let returns=0,points=0;
 let clyckBottleId=null;
+let clyckProduct=null;
 const requestedBottleCode=(new URLSearchParams(window.location.search).get('botella')||'IG-00482').trim();
 const clyckBottleCode=/^[A-Za-z0-9_-]{1,80}$/.test(requestedBottleCode) ? requestedBottleCode : 'IG-00482';
 
@@ -1083,32 +1084,82 @@ async function loadUserBenefits(userId){
   }
 }
 
+
 async function clyckLoadProduct(){
-  const status=document.getElementById('connectionStatus');
-  try{
-    const {data:bottle,error:be}=await clyckDB.from('botellas')
-      .select('id,codigo,estado,producto_id,usuario_id').eq('codigo',clyckBottleCode).single();
-    if(be)throw be;
-    clyckBottleId=bottle.id;
-    status.className='status ok';
-    status.textContent='✓ Botella identificada · experiencia Yosü activa';
-    document.getElementById('bottleState').textContent=bottle.codigo;
-    const headerCode=document.getElementById('headerBottleCode');
-    const heroCode=document.getElementById('heroBottleCode');
-    const identifyCode=document.getElementById('identifyBottleCode');
-    if(headerCode)headerCode.textContent=bottle.codigo;
-    if(heroCode)heroCode.textContent=bottle.codigo;
-    if(identifyCode)identifyCode.textContent=bottle.codigo;
-    document.title='Yosü · Botella #'+bottle.codigo;
+  const status = document.getElementById('connectionStatus');
+
+  try {
+    if (!clyckBottleCode) {
+      throw new Error('Código NFC no válido');
+    }
+
+    // Identificar el frasco
+    const { data: bottle, error: bottleError } = await clyckDB
+      .from('botellas')
+      .select('id,codigo,estado,producto_id,usuario_id')
+      .eq('codigo', clyckBottleCode)
+      .single();
+
+    if (bottleError) throw bottleError;
+
+    clyckBottleId = bottle.id;
+
+    // Consultar el producto asociado
+    const { data: product, error: productError } = await clyckDB
+      .from('productos')
+      .select('id,nombre,lote,productor,descripcion,activo')
+      .eq('id', bottle.producto_id)
+      .single();
+
+    if (productError) throw productError;
+
+    if (!product.activo) {
+      throw new Error('Este producto no está activo');
+    }
+
+    clyckProduct = product;
+
+    // Mostrar identificación
+    if (status) {
+      status.className = 'status ok';
+      status.textContent = '✓ ' + product.nombre + ' identificada · experiencia Yosü activa';
+    }
+
+    const bottleState = document.getElementById('bottleState');
+    if (bottleState) bottleState.textContent = bottle.codigo;
+
+    const headerCode = document.getElementById('headerBottleCode');
+    const heroCode = document.getElementById('heroBottleCode');
+    const identifyCode = document.getElementById('identifyBottleCode');
+
+    if (headerCode) headerCode.textContent = bottle.codigo;
+    if (heroCode) heroCode.textContent = bottle.codigo;
+    if (identifyCode) identifyCode.textContent = bottle.codigo;
+
+    document.title = 'Yosü · ' + product.nombre + ' #' + bottle.codigo;
+
     await clyckRegisterInteraction('apertura');
     await refreshAccountUI();
-  }catch(e){
+
+    console.log('Producto identificado:', product);
+    console.log('Frasco identificado:', bottle);
+
+  } catch(e) {
+    clyckBottleId = null;
+    clyckProduct = null;
+
     await refreshAccountUI();
-    console.error('CLYCK/Supabase:',e);
-    status.className='status warn';
-    status.textContent='No se encontró la botella '+clyckBottleCode+' · revisa el identificador NFC/QR';
+
+    console.error('CLYCK/Supabase:', e);
+
+    if (status) {
+      status.className = 'status warn';
+      status.textContent = 'No se pudo identificar el producto: ' + e.message;
+    }
   }
 }
+
+  
 clyckDB.auth.onAuthStateChange(()=>{ refreshAccountUI(); });
 clyckLoadProduct();
 </script>
